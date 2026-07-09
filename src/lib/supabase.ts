@@ -31,8 +31,14 @@ export async function syncSettings(): Promise<void> {
   try {
     const { data } = await supabase.from('settings').select('key, value')
     if (data) {
-      data.forEach(({ key, value }: { key: string; value: string }) => {
-        try { localStorage.setItem(PREFIX + key, value) } catch {}
+      data.forEach(({ key, value }: { key: string; value: string | null }) => {
+        try {
+          if (value !== null && value !== undefined) {
+            localStorage.setItem(PREFIX + key, value)
+          } else {
+            localStorage.removeItem(PREFIX + key)
+          }
+        } catch {}
       })
     }
   } catch { /* sem internet ou tabela inexistente: silencia */ }
