@@ -13,10 +13,13 @@ export function getSetting(key: string): string | null {
 
 export function setSetting(key: string, value: string): void {
   try { localStorage.setItem(PREFIX + key, value) } catch {}
-  supabase
-    .from('settings')
-    .upsert({ key, value }, { onConflict: 'key' })
-    .then(() => {})
+  supabase.from('settings').upsert({ key, value }, { onConflict: 'key' }).then(() => {})
+}
+
+export async function saveSetting(key: string, value: string): Promise<void> {
+  try { localStorage.setItem(PREFIX + key, value) } catch {}
+  const { error } = await supabase.from('settings').upsert({ key, value }, { onConflict: 'key' })
+  if (error) throw error
 }
 
 export function deleteSetting(key: string): void {

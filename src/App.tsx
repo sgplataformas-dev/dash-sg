@@ -17,8 +17,8 @@ export default function App() {
 
   if (!ready) {
     return (
-      <div className="min-h-screen bg-[#0A0F1E] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#0F0F23] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#74B9FF] border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }

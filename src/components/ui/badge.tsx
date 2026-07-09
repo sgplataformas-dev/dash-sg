@@ -7,22 +7,20 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default:     "border-transparent bg-[#3B82F6] text-white",
-        secondary:   "border-transparent bg-[#111827] text-[#64748B]",
-        destructive: "border-transparent bg-red-600 text-white",
-        outline:     "text-[#E2E8F0] border-[#1E2D4A]",
-        success:     "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
-        warning:     "bg-amber-500/20 text-amber-400 border border-amber-500/30",
-        error:       "bg-red-500/20 text-red-400 border border-red-500/30",
-        info:        "bg-[#3B82F6]/15 text-[#93C5FD] border border-[#3B82F6]/30",
-        gray:        "bg-[#1E2D4A]/60 text-[#64748B] border border-[#1E2D4A]",
-        active:      "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
-        paused:      "bg-amber-500/20 text-amber-400 border border-amber-500/30",
+        default:     "border-transparent bg-[#74B9FF] text-[#0F0F23]",
+        secondary:   "border-transparent bg-[#1A1A2E] text-[#8892a4]",
+        destructive: "border-transparent bg-[#E94560] text-white",
+        outline:     "text-[#E0E0E0] border-[#2d2d4a]",
+        success:     "bg-[#00B894]/15 text-[#00B894] border border-[#00B894]/30",
+        warning:     "bg-[#FDCB6E]/20 text-[#FDCB6E] border border-[#FDCB6E]/30",
+        error:       "bg-[#E94560]/20 text-[#E94560] border border-[#E94560]/30",
+        info:        "bg-[#74B9FF]/15 text-[#74B9FF] border border-[#74B9FF]/30",
+        gray:        "bg-[#2d2d4a]/60 text-[#8892a4] border border-[#2d2d4a]",
+        active:      "bg-[#00B894]/15 text-[#00B894] border border-[#00B894]/30",
+        paused:      "bg-[#FDCB6E]/20 text-[#FDCB6E] border border-[#FDCB6E]/30",
       },
     },
-    defaultVariants: {
-      variant: "default",
-    },
+    defaultVariants: { variant: "default" },
   }
 )
 
