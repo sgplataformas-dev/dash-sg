@@ -224,9 +224,7 @@ export default function Integrations() {
       </Card>
 
       {/* Webhook Cards */}
-      <WebhookCard title="Hotmart"  platform="hotmart"  />
-      <WebhookCard title="Kiwify"   platform="kiwify"   />
-      <WebhookCard title="Kirvano"  platform="kirvano"  />
+      <WebhookCard title="Payt" platform="payt" />
     </div>
   )
 }
