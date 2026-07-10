@@ -79,18 +79,28 @@ export interface DailyMetric {
 
 export interface KPIMetrics {
   grossRevenue: number
-  netRevenue: number
   adSpend: number
-  roi: number
-  roas: number
+  cpm: number
+  ctr: number
+  cpc: number
+  cpv: number
+  cpi: number
   cpa: number
+  roas: number
+  tax: number
+  profit: number
   sales: number
   prevGrossRevenue: number
-  prevNetRevenue: number
   prevAdSpend: number
-  prevRoi: number
-  prevRoas: number
+  prevCpm: number
+  prevCtr: number
+  prevCpc: number
+  prevCpv: number
+  prevCpi: number
   prevCpa: number
+  prevRoas: number
+  prevTax: number
+  prevProfit: number
   prevSales: number
 }
 

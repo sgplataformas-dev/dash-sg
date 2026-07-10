@@ -3,7 +3,10 @@ import {
   LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
-import { ArrowUpRight, ArrowDownRight, DollarSign, TrendingUp, Target, ShoppingCart } from 'lucide-react'
+import {
+  ArrowUpRight, ArrowDownRight, DollarSign, TrendingUp, Target,
+  ShoppingCart, Eye, MousePointer2, Play, Zap, Receipt, Wallet,
+} from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -21,14 +24,22 @@ export default function Dashboard() {
   const chartData = period === 'today' ? dailyData.slice(-1) : period === '7d' ? dailyData.slice(-7) : dailyData
   const topCampaigns = [...mockCampaigns].filter(c => c.sales > 0).sort((a, b) => b.revenue - a.revenue).slice(0, 5)
 
-  const kpis = [
-    { label: 'Fat. Bruto',  value: formatCurrency(metrics.grossRevenue), curr: metrics.grossRevenue, prev: metrics.prevGrossRevenue, icon: DollarSign,   inverted: false },
-    { label: 'Fat. Líquido',value: formatCurrency(metrics.netRevenue),   curr: metrics.netRevenue,   prev: metrics.prevNetRevenue,   icon: TrendingUp,   inverted: false },
-    { label: 'Gasto Ads',   value: formatCurrency(metrics.adSpend),      curr: metrics.adSpend,      prev: metrics.prevAdSpend,      icon: Target,       inverted: true  },
-    { label: 'ROI',         value: `${metrics.roi.toFixed(1)}%`,          curr: metrics.roi,          prev: metrics.prevRoi,          icon: TrendingUp,   inverted: false },
-    { label: 'ROAS',        value: metrics.roas.toFixed(2),               curr: metrics.roas,         prev: metrics.prevRoas,         icon: Target,       inverted: false },
-    { label: 'CPA',         value: formatCurrency(metrics.cpa),           curr: metrics.cpa,          prev: metrics.prevCpa,          icon: Target,       inverted: true  },
-    { label: 'Vendas',      value: formatNumber(metrics.sales),           curr: metrics.sales,        prev: metrics.prevSales,        icon: ShoppingCart, inverted: false },
+  const kpis: {
+    label: string; value: string; curr: number; prev: number;
+    icon: React.ElementType; inverted: boolean; badge?: 'auto' | 'manual'
+  }[] = [
+    { label: 'Faturamento', value: formatCurrency(metrics.grossRevenue), curr: metrics.grossRevenue, prev: metrics.prevGrossRevenue, icon: DollarSign,    inverted: false },
+    { label: 'Invest.',     value: formatCurrency(metrics.adSpend),      curr: metrics.adSpend,      prev: metrics.prevAdSpend,      icon: Target,        inverted: true  },
+    { label: 'CPM',         value: formatCurrency(metrics.cpm),          curr: metrics.cpm,          prev: metrics.prevCpm,          icon: Eye,           inverted: true  },
+    { label: 'CTR',         value: `${metrics.ctr.toFixed(1)}%`,         curr: metrics.ctr,          prev: metrics.prevCtr,          icon: MousePointer2, inverted: false },
+    { label: 'CPC',         value: formatCurrency(metrics.cpc),          curr: metrics.cpc,          prev: metrics.prevCpc,          icon: MousePointer2, inverted: true  },
+    { label: 'CPV',         value: formatCurrency(metrics.cpv),          curr: metrics.cpv,          prev: metrics.prevCpv,          icon: Play,          inverted: true  },
+    { label: 'CPI',         value: formatCurrency(metrics.cpi),          curr: metrics.cpi,          prev: metrics.prevCpi,          icon: Zap,           inverted: true  },
+    { label: 'CPA',         value: formatCurrency(metrics.cpa),          curr: metrics.cpa,          prev: metrics.prevCpa,          icon: Target,        inverted: true,  badge: 'auto'   },
+    { label: 'ROAS',        value: metrics.roas.toFixed(2),              curr: metrics.roas,         prev: metrics.prevRoas,         icon: TrendingUp,    inverted: false, badge: 'auto'   },
+    { label: 'Imposto',     value: formatCurrency(metrics.tax),          curr: metrics.tax,          prev: metrics.prevTax,          icon: Receipt,       inverted: true,  badge: 'auto'   },
+    { label: 'Lucro',       value: formatCurrency(metrics.profit),       curr: metrics.profit,       prev: metrics.prevProfit,       icon: Wallet,        inverted: false, badge: 'auto'   },
+    { label: 'Vendas',      value: formatNumber(metrics.sales),          curr: metrics.sales,        prev: metrics.prevSales,        icon: ShoppingCart,  inverted: false, badge: 'manual' },
   ]
 
   return (
@@ -49,20 +60,31 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         {kpis.map((kpi) => {
           const pct = kpi.prev === 0 ? 0 : ((kpi.curr - kpi.prev) / Math.abs(kpi.prev)) * 100
           const isGood = kpi.inverted ? pct < 0 : pct > 0
           const Icon = kpi.icon
           return (
             <Card key={kpi.label} className="bg-[#1A1A2E] border-[#2d2d4a]">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] uppercase tracking-wide text-[#8892a4]">{kpi.label}</p>
-                  <Icon className="w-3.5 h-3.5 text-[#8892a4]" />
+              <CardContent className="p-3">
+                <div className="flex items-start justify-between mb-1.5">
+                  <div className="flex items-center gap-1">
+                    <p className="text-[10px] uppercase tracking-wide text-[#8892a4] font-medium">{kpi.label}</p>
+                    {kpi.badge && (
+                      <span className={`text-[8px] px-1 py-0.5 rounded font-semibold leading-none ${
+                        kpi.badge === 'auto'
+                          ? 'bg-[#74B9FF]/15 text-[#74B9FF]'
+                          : 'bg-[#2d2d4a] text-[#8892a4]'
+                      }`}>
+                        {kpi.badge}
+                      </span>
+                    )}
+                  </div>
+                  <Icon className="w-3 h-3 text-[#8892a4] flex-shrink-0 mt-0.5" />
                 </div>
-                <p className="text-lg font-bold text-[#E0E0E0] leading-none">{kpi.value}</p>
-                <div className={`flex items-center gap-0.5 mt-1.5 text-xs font-medium ${isGood ? 'text-[#00B894]' : 'text-[#E94560]'}`}>
+                <p className="text-base font-bold text-[#E0E0E0] leading-none">{kpi.value}</p>
+                <div className={`flex items-center gap-0.5 mt-1.5 text-[10px] font-medium ${isGood ? 'text-[#00B894]' : 'text-[#E94560]'}`}>
                   {isGood ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                   <span>{Math.abs(pct).toFixed(1)}%</span>
                 </div>
