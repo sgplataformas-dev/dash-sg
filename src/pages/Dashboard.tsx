@@ -5,7 +5,7 @@ import {
 } from 'recharts'
 import {
   ArrowUpRight, ArrowDownRight, DollarSign, TrendingUp, Target,
-  ShoppingCart, Wallet, Receipt, ShoppingBag, BarChart3, Zap, CreditCard,
+  ShoppingCart, Wallet, Receipt, ShoppingBag, BarChart3, Zap, CreditCard, RotateCcw,
 } from 'lucide-react'
 import { subDays, startOfDay, isSameDay, format as formatDateFns } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -34,9 +34,9 @@ function paymentLabel(method: string | null): string {
   return 'Outros'
 }
 
-function MetricCard({ label, value, curr, prev, icon: Icon, inverted = false, noCompare = false }: {
+function MetricCard({ label, value, curr, prev, icon: Icon, inverted = false, noCompare = false, subtitle }: {
   label: string; value: string; curr: number; prev: number
-  icon: React.ElementType; inverted?: boolean; noCompare?: boolean
+  icon: React.ElementType; inverted?: boolean; noCompare?: boolean; subtitle?: string
 }) {
   const pct = prev === 0 ? 0 : ((curr - prev) / Math.abs(prev)) * 100
   const isGood = inverted ? pct < 0 : pct > 0
@@ -54,6 +54,7 @@ function MetricCard({ label, value, curr, prev, icon: Icon, inverted = false, no
           <div className={`flex items-center gap-0.5 mt-1.5 text-[10px] font-medium ${isGood ? 'text-[#00B894]' : 'text-[#E94560]'}`}>
             {isGood ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
             <span>{Math.abs(pct).toFixed(1)}%</span>
+            {subtitle && <span className="text-[#8892a4] font-normal ml-1">{subtitle}</span>}
           </div>
         )}
       </CardContent>
@@ -98,16 +99,20 @@ export default function Dashboard() {
   const taxPercent = rates.reduce((sum, r) => (r.appliesTo === 'revenue' && r.type === 'percent') ? sum + r.value : sum, 0)
 
   const approved = useMemo(() => sales.filter(s => s.status === 'approved'), [sales])
+  const refunded = useMemo(() => sales.filter(s => s.status === 'refunded' || s.status === 'chargeback'), [sales])
   const periodDays = period === 'today' ? 1 : period === '7d' ? 7 : 30
 
-  const periodSales = useMemo(() => {
+  const splitByPeriod = (list: RawSale[]) => {
     const cutoff = subDays(startOfDay(new Date()), periodDays - 1)
     const prevCutoff = subDays(cutoff, periodDays)
     return {
-      curr: approved.filter(s => new Date(s.date) >= cutoff),
-      prev: approved.filter(s => { const d = new Date(s.date); return d >= prevCutoff && d < cutoff }),
+      curr: list.filter(s => new Date(s.date) >= cutoff),
+      prev: list.filter(s => { const d = new Date(s.date); return d >= prevCutoff && d < cutoff }),
     }
-  }, [approved, periodDays])
+  }
+
+  const periodSales = useMemo(() => splitByPeriod(approved), [approved, periodDays])
+  const periodRefunds = useMemo(() => splitByPeriod(refunded), [refunded, periodDays])
 
   const metrics = useMemo(() => {
     const { curr, prev } = periodSales
@@ -130,13 +135,19 @@ export default function Dashboard() {
     const ticketMedio = sales > 0 ? grossRevenue / sales : 0
     const prevTicketMedio = prevSales > 0 ? prevGrossRevenue / prevSales : 0
 
+    const refundAmount = periodRefunds.curr.reduce((sum, s) => sum + s.amount, 0)
+    const prevRefundAmount = periodRefunds.prev.reduce((sum, s) => sum + s.amount, 0)
+    const refundCount = periodRefunds.curr.length
+    const prevRefundCount = periodRefunds.prev.length
+
     return {
       grossRevenue, prevGrossRevenue, adSpend, prevAdSpend,
       impostoMeta, prevImpostoMeta, profit, prevProfit,
       sales, prevSales, roi, prevRoi, roas, prevRoas, cpa, prevCpa,
       ticketMedio, prevTicketMedio, comprasFB: 0, prevComprasFB: 0,
+      refundAmount, prevRefundAmount, refundCount, prevRefundCount,
     }
-  }, [periodSales, taxPercent])
+  }, [periodSales, periodRefunds, taxPercent])
 
   const chartData = useMemo(() => {
     const buckets: { date: string; revenue: number; spend: number; sales: number; cpa: number; roas: number }[] = []
@@ -217,7 +228,7 @@ export default function Dashboard() {
 
   const topCampaigns = [...mockCampaigns].filter(c => c.sales > 0).sort((a, b) => b.revenue - a.revenue).slice(0, 5)
 
-  const kpis: { label: string; value: string; curr: number; prev: number; icon: React.ElementType; inverted?: boolean; noCompare?: boolean }[] = [
+  const kpis: { label: string; value: string; curr: number; prev: number; icon: React.ElementType; inverted?: boolean; noCompare?: boolean; subtitle?: string }[] = [
     { label: 'Faturamento Bruto', value: formatCurrency(metrics.grossRevenue), curr: metrics.grossRevenue, prev: metrics.prevGrossRevenue, icon: DollarSign },
     { label: 'Gasto com Ads',     value: formatCurrency(metrics.adSpend),      curr: metrics.adSpend,      prev: metrics.prevAdSpend,      icon: Target, inverted: true },
     { label: 'Lucro',             value: formatCurrency(metrics.profit),       curr: metrics.profit,       prev: metrics.prevProfit,       icon: Wallet },
@@ -226,6 +237,7 @@ export default function Dashboard() {
     { label: 'CPA',               value: formatCurrency(metrics.cpa),          curr: metrics.cpa,          prev: metrics.prevCpa,          icon: Zap, inverted: true },
     { label: 'Imposto Meta',      value: formatCurrency(metrics.impostoMeta),  curr: metrics.impostoMeta,  prev: metrics.prevImpostoMeta,  icon: Receipt, noCompare: true },
     { label: 'Vendas',            value: formatNumber(metrics.sales),          curr: metrics.sales,        prev: metrics.prevSales,        icon: ShoppingCart },
+    { label: 'Reembolsos',        value: formatCurrency(metrics.refundAmount), curr: metrics.refundAmount, prev: metrics.prevRefundAmount, icon: RotateCcw, inverted: true, subtitle: `(${formatNumber(metrics.refundCount)})` },
     { label: 'Compras FB',        value: formatNumber(metrics.comprasFB),      curr: metrics.comprasFB,    prev: metrics.prevComprasFB,    icon: ShoppingBag, noCompare: true },
   ]
 
