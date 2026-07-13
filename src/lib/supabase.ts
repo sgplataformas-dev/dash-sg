@@ -57,6 +57,28 @@ export async function fetchSales(): Promise<Sale[]> {
   }))
 }
 
+export interface RawSale {
+  date: string
+  amount: number
+  status: string
+  isOrganic: boolean
+}
+
+export async function fetchRawSales(): Promise<RawSale[]> {
+  const { data, error } = await supabase
+    .from('sales')
+    .select('sale_date, amount, status, is_organic')
+    .order('sale_date', { ascending: false })
+    .limit(2000)
+  if (error || !data) return []
+  return data.map(row => ({
+    date: row.sale_date,
+    amount: Number(row.amount),
+    status: row.status,
+    isOrganic: Boolean(row.is_organic),
+  }))
+}
+
 export async function syncSettings(): Promise<void> {
   try {
     const { data } = await supabase.from('settings').select('key, value')

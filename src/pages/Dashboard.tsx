@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -7,21 +7,69 @@ import {
   ArrowUpRight, ArrowDownRight, DollarSign, TrendingUp, Target,
   ShoppingCart, Eye, MousePointer2, Play, Zap, Receipt, Wallet,
 } from 'lucide-react'
+import { subDays, startOfDay, isSameDay, format as formatDateFns } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatNumber } from '@/lib/utils'
-import { mockMetrics, dailyData, salesBySource, mockCampaigns } from '@/data/mockData'
+import { mockCampaigns } from '@/data/mockData'
+import { fetchRawSales, type RawSale } from '@/lib/supabase'
 import type { Period } from '@/types'
 
 const PIE_COLORS = ['#74B9FF', '#00B894', '#6C5CE7', '#FDCB6E']
 
 export default function Dashboard() {
   const [period, setPeriod] = useState<Period>('7d')
+  const [sales, setSales] = useState<RawSale[]>([])
 
-  const metrics = mockMetrics[period]
-  const chartData = period === 'today' ? dailyData.slice(-1) : period === '7d' ? dailyData.slice(-7) : dailyData
+  useEffect(() => {
+    fetchRawSales().then(setSales)
+  }, [])
+
+  const approved = useMemo(() => sales.filter(s => s.status === 'approved'), [sales])
+  const periodDays = period === 'today' ? 1 : period === '7d' ? 7 : 30
+
+  const metrics = useMemo(() => {
+    const cutoff = subDays(startOfDay(new Date()), periodDays - 1)
+    const prevCutoff = subDays(cutoff, periodDays)
+    const curr = approved.filter(s => new Date(s.date) >= cutoff)
+    const prev = approved.filter(s => { const d = new Date(s.date); return d >= prevCutoff && d < cutoff })
+    const grossRevenue = curr.reduce((sum, s) => sum + s.amount, 0)
+    const prevGrossRevenue = prev.reduce((sum, s) => sum + s.amount, 0)
+
+    return {
+      grossRevenue, adSpend: 0,
+      cpm: 0, ctr: 0, cpc: 0, cpv: 0, cpi: 0,
+      cpa: 0, roas: 0,
+      tax: 0, profit: grossRevenue, sales: curr.length,
+      prevGrossRevenue, prevAdSpend: 0,
+      prevCpm: 0, prevCtr: 0, prevCpc: 0, prevCpv: 0, prevCpi: 0,
+      prevCpa: 0, prevRoas: 0,
+      prevTax: 0, prevProfit: prevGrossRevenue, prevSales: prev.length,
+    }
+  }, [approved, periodDays])
+
+  const chartData = useMemo(() => {
+    const buckets: { date: string; revenue: number; spend: number; sales: number }[] = []
+    for (let i = periodDays - 1; i >= 0; i--) {
+      const day = subDays(startOfDay(new Date()), i)
+      const dayRevenue = approved.filter(s => isSameDay(new Date(s.date), day)).reduce((sum, s) => sum + s.amount, 0)
+      const daySales = approved.filter(s => isSameDay(new Date(s.date), day)).length
+      buckets.push({ date: formatDateFns(day, 'dd/MM'), revenue: dayRevenue, spend: 0, sales: daySales })
+    }
+    return buckets
+  }, [approved, periodDays])
+
+  const salesBySource = useMemo(() => {
+    const paid = approved.filter(s => !s.isOrganic).length
+    const organic = approved.filter(s => s.isOrganic).length
+    return [
+      { name: 'Facebook', value: paid },
+      { name: 'Orgânico', value: organic },
+    ].filter(s => s.value > 0)
+  }, [approved])
+
   const topCampaigns = [...mockCampaigns].filter(c => c.sales > 0).sort((a, b) => b.revenue - a.revenue).slice(0, 5)
 
   const kpis: {
