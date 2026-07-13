@@ -1,22 +1,10 @@
-create table if not exists sales (
-  id uuid primary key default gen_random_uuid(),
-  transaction_id text unique not null,
-  date timestamptz not null,
-  product text not null,
-  value numeric not null default 0,
-  checkout text not null default 'Payt',
-  campaign text,
-  ad_set text,
-  ad text,
-  status text not null default 'pendente',
-  type text not null default 'paga',
-  customer_name text,
-  customer_email text,
-  raw jsonb,
-  created_at timestamptz not null default now()
-);
+-- Note: the `sales` table already existed in this project with a richer
+-- schema (checkout_platform, amount, buyer_name, matched_ad_id/ad_set_id/
+-- campaign_id FKs, match_sale_to_ad trigger, etc). These are the two
+-- adjustments needed to receive Payt webhooks into it.
 
-alter table sales enable row level security;
+alter table public.sales drop constraint if exists sales_checkout_platform_check;
+alter table public.sales add constraint sales_checkout_platform_check
+  check (checkout_platform = any (array['hotmart'::text, 'kiwify'::text, 'kirvano'::text, 'payt'::text]));
 
-create policy "sales_select" on sales
-  for select using (true);
+alter table public.sales add constraint sales_transaction_id_unique unique (transaction_id);

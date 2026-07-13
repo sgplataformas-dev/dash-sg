@@ -29,23 +29,31 @@ export function deleteSetting(key: string): void {
   supabase.from('settings').delete().eq('key', key).then(() => {})
 }
 
+const dbStatusToSaleStatus: Record<string, Sale['status']> = {
+  approved: 'aprovada',
+  pending: 'pendente',
+  refunded: 'reembolsada',
+  cancelled: 'reembolsada',
+  chargeback: 'reembolsada',
+}
+
 export async function fetchSales(): Promise<Sale[]> {
   const { data, error } = await supabase
     .from('sales')
-    .select('id, date, product, value, checkout, campaign, ad_set, ad, status, type')
-    .order('date', { ascending: false })
+    .select('id, sale_date, product_name, amount, checkout_platform, utm_campaign, status, is_organic')
+    .order('sale_date', { ascending: false })
   if (error || !data) return []
   return data.map(row => ({
     id: row.id,
-    date: format(new Date(row.date), 'dd/MM/yyyy'),
-    product: row.product,
-    value: Number(row.value),
-    checkout: row.checkout,
-    campaign: row.campaign ?? '—',
-    adSet: row.ad_set ?? '—',
-    ad: row.ad ?? '—',
-    status: row.status,
-    type: row.type,
+    date: format(new Date(row.sale_date), 'dd/MM/yyyy'),
+    product: row.product_name ?? '—',
+    value: Number(row.amount),
+    checkout: (row.checkout_platform.charAt(0).toUpperCase() + row.checkout_platform.slice(1)) as Sale['checkout'],
+    campaign: row.utm_campaign ?? '—',
+    adSet: '—',
+    ad: '—',
+    status: dbStatusToSaleStatus[row.status] ?? 'pendente',
+    type: row.is_organic ? 'organica' : 'paga',
   }))
 }
 

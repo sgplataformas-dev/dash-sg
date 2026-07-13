@@ -5,10 +5,12 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
 
-function mapStatus(paytStatus: string): 'aprovada' | 'pendente' | 'reembolsada' {
-  if (paytStatus === 'paid') return 'aprovada'
-  if (paytStatus === 'refunded' || paytStatus === 'chargedback' || paytStatus === 'chargeback') return 'reembolsada'
-  return 'pendente'
+function mapStatus(paytStatus: string): 'approved' | 'pending' | 'refunded' | 'cancelled' | 'chargeback' {
+  if (paytStatus === 'paid') return 'approved'
+  if (paytStatus === 'refunded') return 'refunded'
+  if (paytStatus === 'chargedback' || paytStatus === 'chargeback') return 'chargeback'
+  if (paytStatus === 'canceled' || paytStatus === 'cancelled') return 'cancelled'
+  return 'pending'
 }
 
 Deno.serve(async (req) => {
@@ -28,19 +30,25 @@ Deno.serve(async (req) => {
   }
 
   const row = {
+    checkout_platform: 'payt',
     transaction_id: body.transaction_id,
-    date: body.transaction?.paid_at ?? body.updated_at ?? new Date().toISOString(),
-    product: body.product?.name ?? 'Produto',
-    value: (body.transaction?.total_price ?? 0) / 100,
-    checkout: 'Payt',
-    campaign: body.link?.title ?? null,
-    ad_set: body.link?.sources?.utm_source ?? null,
-    ad: null,
+    product_name: body.product?.name ?? null,
+    product_id: body.product?.code ?? body.product?.sku ?? null,
+    buyer_name: body.customer?.name ?? null,
+    buyer_email: body.customer?.email ?? null,
+    amount: (body.transaction?.total_price ?? 0) / 100,
+    currency: 'BRL',
     status: mapStatus(body.status),
-    type: 'paga',
-    customer_name: body.customer?.name ?? null,
-    customer_email: body.customer?.email ?? null,
-    raw: body,
+    payment_method: body.transaction?.payment_method ?? null,
+    utm_source: body.link?.sources?.utm_source ?? null,
+    utm_medium: body.link?.sources?.utm_medium ?? null,
+    utm_campaign: body.link?.sources?.utm_campaign ?? null,
+    utm_content: body.link?.sources?.utm_content ?? null,
+    utm_term: body.link?.sources?.utm_term ?? null,
+    ad_id: body.link?.sources?.src ?? null,
+    is_organic: !body.link?.sources?.utm_source,
+    sale_date: body.transaction?.paid_at ?? body.updated_at ?? new Date().toISOString(),
+    raw_webhook_data: body,
   }
 
   const { error } = await supabase.from('sales').upsert(row, { onConflict: 'transaction_id' })
