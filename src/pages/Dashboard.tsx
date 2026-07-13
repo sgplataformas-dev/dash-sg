@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatNumber } from '@/lib/utils'
 import { mockCampaigns } from '@/data/mockData'
-import { fetchRawSales, type RawSale } from '@/lib/supabase'
+import { fetchRawSales, subscribeToSales, type RawSale } from '@/lib/supabase'
 import type { Period } from '@/types'
 
 const PIE_COLORS = ['#74B9FF', '#00B894', '#6C5CE7', '#FDCB6E']
@@ -25,6 +25,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchRawSales().then(setSales)
+    return subscribeToSales(() => { fetchRawSales().then(setSales) })
   }, [])
 
   const approved = useMemo(() => sales.filter(s => s.status === 'approved'), [sales])

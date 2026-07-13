@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatCurrency } from '@/lib/utils'
-import { fetchSales } from '@/lib/supabase'
+import { fetchSales, subscribeToSales } from '@/lib/supabase'
 import type { CheckoutType, Sale, SaleStatus, SaleType } from '@/types'
 
 const statusVariant: Record<SaleStatus, 'success' | 'warning' | 'error'> = {
@@ -29,6 +29,7 @@ export default function Sales() {
 
   useEffect(() => {
     fetchSales().then(setSales)
+    return subscribeToSales(() => { fetchSales().then(setSales) })
   }, [])
 
   const filtered = useMemo(() => {

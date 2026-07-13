@@ -79,6 +79,14 @@ export async function fetchRawSales(): Promise<RawSale[]> {
   }))
 }
 
+export function subscribeToSales(onChange: () => void): () => void {
+  const channel = supabase
+    .channel('sales-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, onChange)
+    .subscribe()
+  return () => { supabase.removeChannel(channel) }
+}
+
 export async function syncSettings(): Promise<void> {
   try {
     const { data } = await supabase.from('settings').select('key, value')
