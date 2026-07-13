@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CheckCircle2, XCircle, Copy, Check, Loader2, Link2 } from 'lucide-react'
+import { CheckCircle2, XCircle, Copy, Check, Loader2, Link2, RefreshCw } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,9 +9,11 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { getSetting, saveSetting, deleteSetting } from '@/lib/supabase'
 import { toast } from '@/hooks/use-toast'
+import { formatCurrency } from '@/lib/utils'
 import type { FacebookAccount } from '@/types'
 
 const BASE_URL = typeof window !== 'undefined' ? window.location.origin : 'https://seu-dominio.vercel.app'
+const SYNC_FN_URL = 'https://jayuivvpbhsfjpetfspa.supabase.co/functions/v1/sync-facebook-ads'
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -67,6 +69,7 @@ export default function Integrations() {
   const [isConnected, setIsConnected] = useState(false)
   const [connectedName, setConnectedName] = useState('')
   const [connectedAccountId, setConnectedAccountId] = useState('')
+  const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
     const savedToken = getSetting('facebook_token')
@@ -124,6 +127,24 @@ export default function Integrations() {
     }
   }
 
+  const syncCampaigns = async () => {
+    setSyncing(true)
+    try {
+      const res = await fetch(SYNC_FN_URL, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error ?? 'Erro ao sincronizar.')
+      toast({
+        title: 'Sincronizado!',
+        description: `${data.campaigns} campanhas, ${data.adSets} conjuntos, ${data.ads} anúncios. Gasto (30d): ${formatCurrency(data.totalSpend)}`,
+      })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido'
+      toast({ title: 'Erro ao sincronizar', description: msg, variant: 'destructive' })
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   const disconnect = () => {
     deleteSetting('facebook_token')
     deleteSetting('facebook_ad_account_id')
@@ -168,9 +189,15 @@ export default function Integrations() {
                   <span className="text-[#E0E0E0] font-mono">{connectedAccountId}</span>
                 </div>
               </div>
-              <Button variant="destructive" size="sm" onClick={disconnect} className="bg-[#E94560]/20 text-[#E94560] border border-[#E94560]/30 hover:bg-[#E94560]/30">
-                Desconectar
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={syncCampaigns} disabled={syncing} className="gap-1.5">
+                  {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  Sincronizar campanhas
+                </Button>
+                <Button variant="destructive" size="sm" onClick={disconnect} className="bg-[#E94560]/20 text-[#E94560] border border-[#E94560]/30 hover:bg-[#E94560]/30">
+                  Desconectar
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">

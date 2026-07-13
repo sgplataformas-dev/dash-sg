@@ -13,9 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatNumber } from '@/lib/utils'
-import { mockCampaigns } from '@/data/mockData'
-import { fetchRawSales, subscribeToSales, getSetting, type RawSale } from '@/lib/supabase'
-import type { Period, Rate } from '@/types'
+import { fetchRawSales, fetchCampaignsFull, subscribeToSales, getSetting, type RawSale } from '@/lib/supabase'
+import type { Period, Rate, Campaign } from '@/types'
 
 const PIE_COLORS = ['#74B9FF', '#00B894', '#6C5CE7', '#FDCB6E']
 const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
@@ -85,11 +84,15 @@ function ProgressList({ items }: { items: { label: string; count: number; extra?
 export default function Dashboard() {
   const [period, setPeriod] = useState<Period>('7d')
   const [sales, setSales] = useState<RawSale[]>([])
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
 
   useEffect(() => {
     fetchRawSales().then(setSales)
+    fetchCampaignsFull().then(setCampaigns)
     return subscribeToSales(() => { fetchRawSales().then(setSales) })
   }, [])
+
+  const syncedAdSpend = useMemo(() => campaigns.reduce((sum, c) => sum + c.spend, 0), [campaigns])
 
   const rates = useMemo<Rate[]>(() => {
     const raw = getSetting('rates')
@@ -118,7 +121,7 @@ export default function Dashboard() {
     const { curr, prev } = periodSales
     const grossRevenue = curr.reduce((sum, s) => sum + s.amount, 0)
     const prevGrossRevenue = prev.reduce((sum, s) => sum + s.amount, 0)
-    const adSpend = 0
+    const adSpend = period === '30d' ? syncedAdSpend : 0
     const prevAdSpend = 0
     const impostoMeta = grossRevenue * taxPercent / 100
     const prevImpostoMeta = prevGrossRevenue * taxPercent / 100
@@ -147,7 +150,7 @@ export default function Dashboard() {
       ticketMedio, prevTicketMedio, comprasFB: 0, prevComprasFB: 0,
       refundAmount, prevRefundAmount, refundCount, prevRefundCount,
     }
-  }, [periodSales, periodRefunds, taxPercent])
+  }, [periodSales, periodRefunds, taxPercent, period, syncedAdSpend])
 
   const chartData = useMemo(() => {
     const buckets: { date: string; revenue: number; spend: number; sales: number; cpa: number; roas: number }[] = []
@@ -226,7 +229,7 @@ export default function Dashboard() {
     { label: 'Purchase', value: metrics.sales },
   ]
 
-  const topCampaigns = [...mockCampaigns].filter(c => c.sales > 0).sort((a, b) => b.revenue - a.revenue).slice(0, 5)
+  const topCampaigns = [...campaigns].filter(c => c.sales > 0).sort((a, b) => b.revenue - a.revenue).slice(0, 5)
 
   const kpis: { label: string; value: string; curr: number; prev: number; icon: React.ElementType; inverted?: boolean; noCompare?: boolean; subtitle?: string }[] = [
     { label: 'Faturamento Bruto', value: formatCurrency(metrics.grossRevenue), curr: metrics.grossRevenue, prev: metrics.prevGrossRevenue, icon: DollarSign },

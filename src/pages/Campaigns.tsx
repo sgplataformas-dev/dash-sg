@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { ChevronRight, ChevronDown, Search } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatCurrency, formatNumber } from '@/lib/utils'
-import { mockCampaigns } from '@/data/mockData'
-import type { CampaignStatus } from '@/types'
+import { fetchCampaignsFull } from '@/lib/supabase'
+import type { Campaign, CampaignStatus } from '@/types'
 
 const PAGE_SIZE = 5
 
@@ -17,19 +17,24 @@ const MetricCell = ({ value, formatter = (v: number) => String(v) }: { value: nu
 )
 
 export default function Campaigns() {
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<CampaignStatus | 'all'>('all')
   const [page, setPage] = useState(1)
   const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set())
   const [expandedAdSets, setExpandedAdSets] = useState<Set<string>>(new Set())
 
+  useEffect(() => {
+    fetchCampaignsFull().then(setCampaigns)
+  }, [])
+
   const filtered = useMemo(() => {
-    return mockCampaigns.filter(c => {
+    return campaigns.filter(c => {
       if (statusFilter !== 'all' && c.status !== statusFilter) return false
       if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
-  }, [search, statusFilter])
+  }, [campaigns, search, statusFilter])
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)

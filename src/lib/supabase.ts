@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { format } from 'date-fns'
-import type { Sale } from '@/types'
+import type { Sale, Campaign, CampaignStatus } from '@/types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
@@ -83,6 +83,84 @@ export async function fetchRawSales(): Promise<RawSale[]> {
     paymentMethod: row.payment_method,
     utmSource: row.utm_source,
   }))
+}
+
+function fbStatus(s: string | null): CampaignStatus {
+  return s === 'ACTIVE' ? 'active' : 'paused'
+}
+
+export async function fetchCampaignsFull(): Promise<Campaign[]> {
+  const [campaignsRes, adSetsRes, adsRes] = await Promise.all([
+    supabase.from('v_campaign_performance').select('campaign_id, campaign_name, status, spend, impressions, clicks, cpm, cpc, revenue, sales, roas, cpa'),
+    supabase.from('ad_sets').select('id, campaign_id, adset_name, status, spend, impressions, clicks, cpm, cpc'),
+    supabase.from('v_ad_performance').select('ad_id, ad_name, status, spend, impressions, clicks, cpm, cpc, revenue, sales, roas, cpa, ad_set_id'),
+  ])
+  if (campaignsRes.error || !campaignsRes.data) return []
+
+  const adsByAdSet = new Map<string, typeof adsRes.data>()
+  ;(adsRes.data ?? []).forEach(ad => {
+    if (!ad.ad_set_id) return
+    const list = adsByAdSet.get(ad.ad_set_id) ?? []
+    list.push(ad)
+    adsByAdSet.set(ad.ad_set_id, list)
+  })
+
+  return campaignsRes.data.map(c => {
+    const campaignAdSets = (adSetsRes.data ?? []).filter(a => a.campaign_id === c.campaign_id)
+    const adSets = campaignAdSets.map(a => {
+      const ads = adsByAdSet.get(a.id) ?? []
+      const revenue = ads.reduce((sum, ad) => sum + Number(ad.revenue ?? 0), 0)
+      const salesCount = ads.reduce((sum, ad) => sum + Number(ad.sales ?? 0), 0)
+      const spend = Number(a.spend ?? 0)
+      return {
+        id: a.id,
+        name: a.adset_name,
+        status: fbStatus(a.status),
+        spend,
+        sales: salesCount,
+        revenue,
+        roi: spend > 0 ? ((revenue - spend) / spend) * 100 : 0,
+        roas: spend > 0 ? revenue / spend : 0,
+        cpa: salesCount > 0 ? spend / salesCount : 0,
+        cpm: Number(a.cpm ?? 0),
+        cpc: Number(a.cpc ?? 0),
+        impressions: Number(a.impressions ?? 0),
+        clicks: Number(a.clicks ?? 0),
+        ads: ads.map(ad => ({
+          id: ad.ad_id,
+          name: ad.ad_name,
+          status: fbStatus(ad.status),
+          spend: Number(ad.spend ?? 0),
+          sales: Number(ad.sales ?? 0),
+          revenue: Number(ad.revenue ?? 0),
+          roi: Number(ad.spend) > 0 ? ((Number(ad.revenue ?? 0) - Number(ad.spend)) / Number(ad.spend)) * 100 : 0,
+          roas: Number(ad.roas ?? 0),
+          cpa: Number(ad.cpa ?? 0),
+          cpm: Number(ad.cpm ?? 0),
+          cpc: Number(ad.cpc ?? 0),
+          impressions: Number(ad.impressions ?? 0),
+          clicks: Number(ad.clicks ?? 0),
+        })),
+      }
+    })
+
+    return {
+      id: c.campaign_id,
+      name: c.campaign_name,
+      status: fbStatus(c.status),
+      spend: Number(c.spend ?? 0),
+      sales: Number(c.sales ?? 0),
+      revenue: Number(c.revenue ?? 0),
+      roi: Number(c.spend) > 0 ? ((Number(c.revenue ?? 0) - Number(c.spend)) / Number(c.spend)) * 100 : 0,
+      roas: Number(c.roas ?? 0),
+      cpa: Number(c.cpa ?? 0),
+      cpm: Number(c.cpm ?? 0),
+      cpc: Number(c.cpc ?? 0),
+      impressions: Number(c.impressions ?? 0),
+      clicks: Number(c.clicks ?? 0),
+      adSets,
+    }
+  })
 }
 
 export function subscribeToSales(onChange: () => void): () => void {
