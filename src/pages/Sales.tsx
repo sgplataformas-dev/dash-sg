@@ -56,9 +56,7 @@ export default function Sales() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="Hotmart">Hotmart</SelectItem>
-            <SelectItem value="Kiwify">Kiwify</SelectItem>
-            <SelectItem value="Kirvano">Kirvano</SelectItem>
+            <SelectItem value="Payt">Payt</SelectItem>
           </SelectContent>
         </Select>
         <Select value={type} onValueChange={v => setType(v as SaleType | 'all')}>

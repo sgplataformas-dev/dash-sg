@@ -310,7 +310,7 @@ function RatesTab() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>Nome da taxa</Label>
-              <Input placeholder="Ex: Comissão Hotmart" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+              <Input placeholder="Ex: Comissão Payt" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

@@ -3,7 +3,7 @@ export type Period = 'today' | '7d' | '30d'
 export type CampaignStatus = 'active' | 'paused'
 export type SaleStatus = 'aprovada' | 'pendente' | 'reembolsada'
 export type SaleType = 'paga' | 'organica'
-export type CheckoutType = 'Hotmart' | 'Kiwify' | 'Kirvano'
+export type CheckoutType = 'Payt'
 export type RateType = 'percent' | 'fixed'
 export type RateAppliesTo = 'revenue' | 'commission'
 
