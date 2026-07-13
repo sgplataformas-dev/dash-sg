@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
+import { format } from 'date-fns'
+import type { Sale } from '@/types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
@@ -25,6 +27,26 @@ export async function saveSetting(key: string, value: string): Promise<void> {
 export function deleteSetting(key: string): void {
   try { localStorage.removeItem(PREFIX + key) } catch {}
   supabase.from('settings').delete().eq('key', key).then(() => {})
+}
+
+export async function fetchSales(): Promise<Sale[]> {
+  const { data, error } = await supabase
+    .from('sales')
+    .select('id, date, product, value, checkout, campaign, ad_set, ad, status, type')
+    .order('date', { ascending: false })
+  if (error || !data) return []
+  return data.map(row => ({
+    id: row.id,
+    date: format(new Date(row.date), 'dd/MM/yyyy'),
+    product: row.product,
+    value: Number(row.value),
+    checkout: row.checkout,
+    campaign: row.campaign ?? '—',
+    adSet: row.ad_set ?? '—',
+    ad: row.ad ?? '—',
+    status: row.status,
+    type: row.type,
+  }))
 }
 
 export async function syncSettings(): Promise<void> {

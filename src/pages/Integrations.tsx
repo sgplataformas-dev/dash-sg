@@ -28,8 +28,8 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
-function WebhookCard({ title, platform }: { title: string; platform: string }) {
-  const url = `${BASE_URL}/webhook/${platform}`
+function WebhookCard({ title, platform, url: urlOverride }: { title: string; platform: string; url?: string }) {
+  const url = urlOverride ?? `${BASE_URL}/webhook/${platform}`
   const active = getSetting(`webhook_${platform}_active`) === 'true'
 
   return (
@@ -224,7 +224,11 @@ export default function Integrations() {
       </Card>
 
       {/* Webhook Cards */}
-      <WebhookCard title="Payt" platform="payt" />
+      <WebhookCard
+        title="Payt"
+        platform="payt"
+        url="https://jayuivvpbhsfjpetfspa.supabase.co/functions/v1/webhook-payt"
+      />
     </div>
   )
 }

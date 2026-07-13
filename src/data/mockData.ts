@@ -1,4 +1,4 @@
-import type { Campaign, Sale, DailyMetric, KPIMetrics } from '@/types'
+import type { Campaign, DailyMetric, KPIMetrics } from '@/types'
 
 // ─── Daily metrics (last 30 days) ────────────────────────────────────────────
 
@@ -30,7 +30,3 @@ export const mockMetrics: Record<'today' | '7d' | '30d', KPIMetrics> = {
 // ─── Campaigns ────────────────────────────────────────────────────────────────
 
 export const mockCampaigns: Campaign[] = []
-
-// ─── Sales ────────────────────────────────────────────────────────────────────
-
-export const mockSales: Sale[] = []

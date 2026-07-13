@@ -1,12 +1,12 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatCurrency } from '@/lib/utils'
-import { mockSales } from '@/data/mockData'
-import type { CheckoutType, SaleStatus, SaleType } from '@/types'
+import { fetchSales } from '@/lib/supabase'
+import type { CheckoutType, Sale, SaleStatus, SaleType } from '@/types'
 
 const statusVariant: Record<SaleStatus, 'success' | 'warning' | 'error'> = {
   aprovada:    'success',
@@ -21,13 +21,18 @@ const statusLabel: Record<SaleStatus, string> = {
 }
 
 export default function Sales() {
+  const [sales, setSales] = useState<Sale[]>([])
   const [search, setSearch] = useState('')
   const [checkout, setCheckout] = useState<CheckoutType | 'all'>('all')
   const [type, setType] = useState<SaleType | 'all'>('all')
   const [status, setStatus] = useState<SaleStatus | 'all'>('all')
 
+  useEffect(() => {
+    fetchSales().then(setSales)
+  }, [])
+
   const filtered = useMemo(() => {
-    return mockSales.filter(s => {
+    return sales.filter(s => {
       if (checkout !== 'all' && s.checkout !== checkout) return false
       if (type !== 'all' && s.type !== type) return false
       if (status !== 'all' && s.status !== status) return false
@@ -35,7 +40,7 @@ export default function Sales() {
           !s.campaign.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
-  }, [search, checkout, type, status])
+  }, [sales, search, checkout, type, status])
 
   const totalRevenue = filtered.filter(s => s.status === 'aprovada').reduce((sum, s) => sum + s.value, 0)
 
