@@ -104,21 +104,34 @@ export interface MetaAdsAgg {
   cpv: number
   cpi: number
   fbPurchases: number
+  linkClicks: number
+  pageViews: number
+  viewContent: number
+  initiateCheckout: number
+}
+
+export const EMPTY_META_AGG: MetaAdsAgg = {
+  spend: 0, impressions: 0, clicks: 0, cpm: 0, ctr: 0, cpc: 0, cpv: 0, cpi: 0, fbPurchases: 0,
+  linkClicks: 0, pageViews: 0, viewContent: 0, initiateCheckout: 0,
 }
 
 export async function fetchAccountDailyInsights(since: Date, until: Date): Promise<MetaAdsAgg> {
   const fmt = (d: Date) => d.toISOString().slice(0, 10)
   const { data, error } = await supabase
     .from('fb_account_daily_insights')
-    .select('date, spend, impressions, clicks, cpv, cpi, fb_purchases')
+    .select('date, spend, impressions, clicks, cpv, cpi, fb_purchases, link_clicks, page_views, view_content, initiate_checkout')
     .gte('date', fmt(since))
     .lte('date', fmt(until))
-  if (error || !data) return { spend: 0, impressions: 0, clicks: 0, cpm: 0, ctr: 0, cpc: 0, cpv: 0, cpi: 0, fbPurchases: 0 }
+  if (error || !data) return EMPTY_META_AGG
 
   const spend = data.reduce((s, r) => s + Number(r.spend ?? 0), 0)
   const impressions = data.reduce((s, r) => s + Number(r.impressions ?? 0), 0)
   const clicks = data.reduce((s, r) => s + Number(r.clicks ?? 0), 0)
   const fbPurchases = data.reduce((s, r) => s + Number(r.fb_purchases ?? 0), 0)
+  const linkClicks = data.reduce((s, r) => s + Number(r.link_clicks ?? 0), 0)
+  const pageViews = data.reduce((s, r) => s + Number(r.page_views ?? 0), 0)
+  const viewContent = data.reduce((s, r) => s + Number(r.view_content ?? 0), 0)
+  const initiateCheckout = data.reduce((s, r) => s + Number(r.initiate_checkout ?? 0), 0)
   const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0
   const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0
   const cpc = clicks > 0 ? spend / clicks : 0
@@ -131,7 +144,7 @@ export async function fetchAccountDailyInsights(since: Date, until: Date): Promi
   const cpiSpend = cpiRows.reduce((s, r) => s + Number(r.spend ?? 0), 0)
   const cpi = cpiSpend > 0 ? cpiRows.reduce((s, r) => s + Number(r.cpi) * Number(r.spend), 0) / cpiSpend : 0
 
-  return { spend, impressions, clicks, cpm, ctr, cpc, cpv, cpi, fbPurchases }
+  return { spend, impressions, clicks, cpm, ctr, cpc, cpv, cpi, fbPurchases, linkClicks, pageViews, viewContent, initiateCheckout }
 }
 
 export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Campaign[]> {

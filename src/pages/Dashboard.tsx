@@ -17,7 +17,7 @@ import { resolvePeriodRange, type PeriodOption } from '@/lib/period'
 import { formatCurrency, formatNumber } from '@/lib/utils'
 import {
   fetchRawSales, fetchCampaignsFull, subscribeToSales, getSetting, type RawSale,
-  fetchAccountDailyInsights, type MetaAdsAgg,
+  fetchAccountDailyInsights, type MetaAdsAgg, EMPTY_META_AGG,
 } from '@/lib/supabase'
 import type { Rate, Campaign } from '@/types'
 
@@ -117,8 +117,8 @@ export default function Dashboard() {
   const [customUntil, setCustomUntil] = useState(formatDateFns(new Date(), 'yyyy-MM-dd'))
   const [sales, setSales] = useState<RawSale[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
-  const [metaDaily, setMetaDaily] = useState<MetaAdsAgg>({ spend: 0, impressions: 0, clicks: 0, cpm: 0, ctr: 0, cpc: 0, cpv: 0, cpi: 0, fbPurchases: 0 })
-  const [prevMetaDaily, setPrevMetaDaily] = useState<MetaAdsAgg>({ spend: 0, impressions: 0, clicks: 0, cpm: 0, ctr: 0, cpc: 0, cpv: 0, cpi: 0, fbPurchases: 0 })
+  const [metaDaily, setMetaDaily] = useState<MetaAdsAgg>(EMPTY_META_AGG)
+  const [prevMetaDaily, setPrevMetaDaily] = useState<MetaAdsAgg>(EMPTY_META_AGG)
 
   const { since, until } = useMemo(() => resolvePeriodRange(period, customSince, customUntil), [period, customSince, customUntil])
   const { prevSince, prevUntil } = useMemo(() => {
@@ -260,18 +260,18 @@ export default function Dashboard() {
   }, [periodSales])
 
   const funnelStages = [
-    { label: 'Page View', value: 0 },
-    { label: 'View Content', value: 0 },
-    { label: 'Initiate Checkout', value: 0 },
+    { label: 'Page View', value: metaDaily.pageViews },
+    { label: 'View Content', value: metaDaily.viewContent },
+    { label: 'Initiate Checkout', value: metaDaily.initiateCheckout },
     { label: 'Purchase', value: metrics.sales },
   ]
   const funnelBase = funnelStages[0].value
   const funnelPct = (v: number) => funnelBase > 0 ? `${((v / funnelBase) * 100).toFixed(1)}%` : '—'
 
   const fluxoStages = [
-    { label: 'Cliques no Link', value: 0 },
-    { label: 'Page View', value: 0 },
-    { label: 'IC', value: 0 },
+    { label: 'Cliques no Link', value: metaDaily.linkClicks },
+    { label: 'Page View', value: metaDaily.pageViews },
+    { label: 'IC', value: metaDaily.initiateCheckout },
     { label: 'Purchase', value: metrics.sales },
   ]
 

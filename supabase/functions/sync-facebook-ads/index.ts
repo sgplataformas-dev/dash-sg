@@ -9,6 +9,10 @@ const FB_API = 'https://graph.facebook.com/v19.0'
 
 const LEAD_ACTION_TYPES = ['lead', 'onsite_conversion.lead_grouped', 'offsite_conversion.fb_pixel_lead', 'initiate_checkout']
 const PURCHASE_ACTION_TYPES = ['purchase', 'offsite_conversion.fb_pixel_purchase', 'omni_purchase']
+const LINK_CLICK_TYPES = ['link_click']
+const PAGE_VIEW_TYPES = ['landing_page_view', 'offsite_conversion.fb_pixel_page_view', 'omni_landing_page_view']
+const VIEW_CONTENT_TYPES = ['view_content', 'offsite_conversion.fb_pixel_view_content', 'omni_view_content']
+const INITIATE_CHECKOUT_TYPES = ['initiate_checkout', 'offsite_conversion.fb_pixel_initiate_checkout', 'omni_initiated_checkout']
 
 function countAction(actions: { action_type: string; value: string }[] | undefined, types: string[]): number {
   if (!actions) return 0
@@ -204,6 +208,10 @@ Deno.serve(async (req) => {
         cpv: Number(ins.cost_per_thruplay?.[0]?.value ?? 0),
         cpi: leads > 0 ? spend / leads : 0,
         fb_purchases: purchases,
+        link_clicks: countAction(ins.actions, LINK_CLICK_TYPES),
+        page_views: countAction(ins.actions, PAGE_VIEW_TYPES),
+        view_content: countAction(ins.actions, VIEW_CONTENT_TYPES),
+        initiate_checkout: countAction(ins.actions, INITIATE_CHECKOUT_TYPES),
         synced_at: new Date().toISOString(),
       }
     })
