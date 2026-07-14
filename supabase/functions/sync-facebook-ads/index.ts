@@ -183,6 +183,36 @@ Deno.serve(async (req) => {
       if (error) throw new Error(`ads: ${error.message}`)
     }
 
+    // ── Account-level daily insights (para filtro real por período) ──
+    const dailyInsights = await fetchAllPages(
+      `${FB_API}/act_${accountId}/insights?fields=spend,impressions,clicks,cpm,cpc,ctr,reach,cost_per_thruplay,actions&time_range=${timeRange}&time_increment=1&limit=50&access_token=${token}`
+    )
+
+    const dailyRows = dailyInsights.map(ins => {
+      const spend = Number(ins.spend ?? 0)
+      const leads = countAction(ins.actions, LEAD_ACTION_TYPES)
+      const purchases = countAction(ins.actions, PURCHASE_ACTION_TYPES)
+      return {
+        date: ins.date_start,
+        spend,
+        impressions: Number(ins.impressions ?? 0),
+        clicks: Number(ins.clicks ?? 0),
+        cpm: Number(ins.cpm ?? 0),
+        cpc: Number(ins.cpc ?? 0),
+        ctr: Number(ins.ctr ?? 0),
+        reach: Number(ins.reach ?? 0),
+        cpv: Number(ins.cost_per_thruplay?.[0]?.value ?? 0),
+        cpi: leads > 0 ? spend / leads : 0,
+        fb_purchases: purchases,
+        synced_at: new Date().toISOString(),
+      }
+    })
+
+    if (dailyRows.length > 0) {
+      const { error } = await supabase.from('fb_account_daily_insights').upsert(dailyRows, { onConflict: 'date' })
+      if (error) throw new Error(`fb_account_daily_insights: ${error.message}`)
+    }
+
     const totalSpend = campaignRows.reduce((sum, c) => sum + c.spend, 0)
 
     return new Response(JSON.stringify({
@@ -190,6 +220,7 @@ Deno.serve(async (req) => {
       campaigns: campaignRows.length,
       adSets: adSetRows.length,
       ads: adRows.length,
+      dailyInsights: dailyRows.length,
       totalSpend,
       period: { since: fmt(since), until: fmt(until) },
     }), { status: 200, headers: { 'Content-Type': 'application/json' } })

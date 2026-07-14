@@ -20,6 +20,7 @@ import { formatCurrency, formatNumber } from '@/lib/utils'
 import {
   fetchRawSales, fetchCampaignsFull, subscribeToSales, getSetting, type RawSale,
   fetchActionLog, addActionLogEntry, deleteActionLogEntry,
+  fetchAccountDailyInsights, type MetaAdsAgg,
 } from '@/lib/supabase'
 import type { Rate, Campaign, ActionLogEntry } from '@/types'
 
@@ -119,6 +120,8 @@ export default function Dashboard() {
   const [customUntil, setCustomUntil] = useState(formatDateFns(new Date(), 'yyyy-MM-dd'))
   const [sales, setSales] = useState<RawSale[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [metaDaily, setMetaDaily] = useState<MetaAdsAgg>({ spend: 0, impressions: 0, clicks: 0, cpm: 0, ctr: 0, cpc: 0, cpv: 0, cpi: 0, fbPurchases: 0 })
+  const [prevMetaDaily, setPrevMetaDaily] = useState<MetaAdsAgg>({ spend: 0, impressions: 0, clicks: 0, cpm: 0, ctr: 0, cpc: 0, cpv: 0, cpi: 0, fbPurchases: 0 })
   const [actionLog, setActionLog] = useState<ActionLogEntry[]>([])
   const [logCampaign, setLogCampaign] = useState('')
   const [logAction, setLogAction] = useState('')
@@ -141,6 +144,11 @@ export default function Dashboard() {
   useEffect(() => {
     fetchCampaignsFull(since, until).then(setCampaigns)
   }, [since, until])
+
+  useEffect(() => {
+    fetchAccountDailyInsights(since, until).then(setMetaDaily)
+    fetchAccountDailyInsights(prevSince, prevUntil).then(setPrevMetaDaily)
+  }, [since, until, prevSince, prevUntil])
 
   const loadActionLog = () => { fetchActionLog().then(setActionLog) }
   useEffect(() => { loadActionLog() }, [])
@@ -169,23 +177,7 @@ export default function Dashboard() {
     loadActionLog()
   }
 
-  const syncedAdSpend = useMemo(() => campaigns.reduce((sum, c) => sum + c.spend, 0), [campaigns])
-
-  const metaAgg = useMemo(() => {
-    const totalImpressions = campaigns.reduce((s, c) => s + c.impressions, 0)
-    const totalClicks = campaigns.reduce((s, c) => s + c.clicks, 0)
-    const cpm = totalImpressions > 0 ? (syncedAdSpend / totalImpressions) * 1000 : 0
-    const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0
-    const cpc = totalClicks > 0 ? syncedAdSpend / totalClicks : 0
-    const cpvCampaigns = campaigns.filter(c => c.cpv > 0)
-    const cpvSpend = cpvCampaigns.reduce((s, c) => s + c.spend, 0)
-    const cpv = cpvSpend > 0 ? cpvCampaigns.reduce((s, c) => s + c.cpv * c.spend, 0) / cpvSpend : 0
-    const cpiCampaigns = campaigns.filter(c => c.cpi > 0)
-    const cpiSpend = cpiCampaigns.reduce((s, c) => s + c.spend, 0)
-    const cpi = cpiSpend > 0 ? cpiCampaigns.reduce((s, c) => s + c.cpi * c.spend, 0) / cpiSpend : 0
-    const comprasFB = campaigns.reduce((s, c) => s + c.fbPurchases, 0)
-    return { cpm, ctr, cpc, cpv, cpi, comprasFB }
-  }, [campaigns, syncedAdSpend])
+  const syncedAdSpend = metaDaily.spend
 
   const rates = useMemo<Rate[]>(() => {
     const raw = getSetting('rates')
@@ -210,7 +202,7 @@ export default function Dashboard() {
     const grossRevenue = curr.reduce((sum, s) => sum + s.amount, 0)
     const prevGrossRevenue = prev.reduce((sum, s) => sum + s.amount, 0)
     const adSpend = syncedAdSpend
-    const prevAdSpend = 0
+    const prevAdSpend = prevMetaDaily.spend
     const impostoMeta = grossRevenue * taxPercent / 100
     const prevImpostoMeta = prevGrossRevenue * taxPercent / 100
     const profit = grossRevenue - adSpend - impostoMeta
@@ -242,7 +234,7 @@ export default function Dashboard() {
       refundAmount, prevRefundAmount, refundCount, prevRefundCount,
       uniqueBuyers, prevUniqueBuyers,
     }
-  }, [periodSales, periodRefunds, taxPercent, syncedAdSpend])
+  }, [periodSales, periodRefunds, taxPercent, syncedAdSpend, prevMetaDaily])
 
   const chartData = useMemo(() => {
     return eachDayOfInterval({ start: since, end: until }).map(day => {
@@ -335,20 +327,20 @@ export default function Dashboard() {
   ]
 
   const metaAdsKpis: Kpi[] = [
-    { label: 'Gasto com Ads', value: formatCurrency(metrics.adSpend), curr: metrics.adSpend, prev: metrics.prevAdSpend, icon: Target,         noCompare: true },
-    { label: 'CPM',            value: formatCurrency(metaAgg.cpm),    curr: metaAgg.cpm,      prev: 0,                  icon: Eye,            inverted: true, noCompare: true },
-    { label: 'CTR',            value: `${metaAgg.ctr.toFixed(2)}%`,   curr: metaAgg.ctr,      prev: 0,                  icon: MousePointer2,                  noCompare: true },
-    { label: 'CPC',            value: formatCurrency(metaAgg.cpc),    curr: metaAgg.cpc,      prev: 0,                  icon: MousePointer2,  inverted: true, noCompare: true },
-    { label: 'CPV',            value: formatCurrency(metaAgg.cpv),    curr: metaAgg.cpv,      prev: 0,                  icon: Play,           inverted: true, noCompare: true },
-    { label: 'CPI',            value: formatCurrency(metaAgg.cpi),    curr: metaAgg.cpi,      prev: 0,                  icon: Smartphone,     inverted: true, noCompare: true },
-    { label: 'Compras FB',     value: formatNumber(metaAgg.comprasFB), curr: metaAgg.comprasFB, prev: 0, icon: ShoppingBag, noCompare: true },
+    { label: 'Gasto com Ads', value: formatCurrency(metrics.adSpend), curr: metrics.adSpend, prev: metrics.prevAdSpend, icon: Target,         inverted: true },
+    { label: 'CPM',            value: formatCurrency(metaDaily.cpm),  curr: metaDaily.cpm,    prev: prevMetaDaily.cpm,  icon: Eye,            inverted: true },
+    { label: 'CTR',            value: `${metaDaily.ctr.toFixed(2)}%`, curr: metaDaily.ctr,    prev: prevMetaDaily.ctr,  icon: MousePointer2 },
+    { label: 'CPC',            value: formatCurrency(metaDaily.cpc),  curr: metaDaily.cpc,    prev: prevMetaDaily.cpc,  icon: MousePointer2,  inverted: true },
+    { label: 'CPV',            value: formatCurrency(metaDaily.cpv),  curr: metaDaily.cpv,    prev: prevMetaDaily.cpv,  icon: Play,           inverted: true },
+    { label: 'CPI',            value: formatCurrency(metaDaily.cpi),  curr: metaDaily.cpi,    prev: prevMetaDaily.cpi,  icon: Smartphone,     inverted: true },
+    { label: 'Compras FB',     value: formatNumber(metaDaily.fbPurchases), curr: metaDaily.fbPurchases, prev: prevMetaDaily.fbPurchases, icon: ShoppingBag },
   ]
 
   const crossKpis: Kpi[] = [
     { label: 'Lucro', value: formatCurrency(metrics.profit), curr: metrics.profit, prev: metrics.prevProfit, icon: Wallet },
-    { label: 'ROI',   value: `${metrics.roi.toFixed(1)}%`,   curr: metrics.roi,    prev: metrics.prevRoi,    icon: TrendingUp, noCompare: true },
-    { label: 'ROAS',  value: `${metrics.roas.toFixed(2)}x`,  curr: metrics.roas,   prev: metrics.prevRoas,   icon: BarChart3,   noCompare: true },
-    { label: 'CPA',   value: formatCurrency(metrics.cpa),    curr: metrics.cpa,    prev: metrics.prevCpa,    icon: Zap,         noCompare: true },
+    { label: 'ROI',   value: `${metrics.roi.toFixed(1)}%`,   curr: metrics.roi,    prev: metrics.prevRoi,    icon: TrendingUp },
+    { label: 'ROAS',  value: `${metrics.roas.toFixed(2)}x`,  curr: metrics.roas,   prev: metrics.prevRoas,   icon: BarChart3 },
+    { label: 'CPA',   value: formatCurrency(metrics.cpa),    curr: metrics.cpa,    prev: metrics.prevCpa,    icon: Zap,         inverted: true },
   ]
 
   return (

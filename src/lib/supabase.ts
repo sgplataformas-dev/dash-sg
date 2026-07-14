@@ -94,6 +94,46 @@ function fbStatus(s: string | null): CampaignStatus {
   return s === 'ACTIVE' ? 'active' : 'paused'
 }
 
+export interface MetaAdsAgg {
+  spend: number
+  impressions: number
+  clicks: number
+  cpm: number
+  ctr: number
+  cpc: number
+  cpv: number
+  cpi: number
+  fbPurchases: number
+}
+
+export async function fetchAccountDailyInsights(since: Date, until: Date): Promise<MetaAdsAgg> {
+  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+  const { data, error } = await supabase
+    .from('fb_account_daily_insights')
+    .select('date, spend, impressions, clicks, cpv, cpi, fb_purchases')
+    .gte('date', fmt(since))
+    .lte('date', fmt(until))
+  if (error || !data) return { spend: 0, impressions: 0, clicks: 0, cpm: 0, ctr: 0, cpc: 0, cpv: 0, cpi: 0, fbPurchases: 0 }
+
+  const spend = data.reduce((s, r) => s + Number(r.spend ?? 0), 0)
+  const impressions = data.reduce((s, r) => s + Number(r.impressions ?? 0), 0)
+  const clicks = data.reduce((s, r) => s + Number(r.clicks ?? 0), 0)
+  const fbPurchases = data.reduce((s, r) => s + Number(r.fb_purchases ?? 0), 0)
+  const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0
+  const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0
+  const cpc = clicks > 0 ? spend / clicks : 0
+
+  const cpvRows = data.filter(r => Number(r.cpv ?? 0) > 0)
+  const cpvSpend = cpvRows.reduce((s, r) => s + Number(r.spend ?? 0), 0)
+  const cpv = cpvSpend > 0 ? cpvRows.reduce((s, r) => s + Number(r.cpv) * Number(r.spend), 0) / cpvSpend : 0
+
+  const cpiRows = data.filter(r => Number(r.cpi ?? 0) > 0)
+  const cpiSpend = cpiRows.reduce((s, r) => s + Number(r.spend ?? 0), 0)
+  const cpi = cpiSpend > 0 ? cpiRows.reduce((s, r) => s + Number(r.cpi) * Number(r.spend), 0) / cpiSpend : 0
+
+  return { spend, impressions, clicks, cpm, ctr, cpc, cpv, cpi, fbPurchases }
+}
+
 export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Campaign[]> {
   let salesQuery = supabase
     .from('sales')
