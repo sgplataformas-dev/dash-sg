@@ -121,7 +121,7 @@ export default function Dashboard() {
     const { curr, prev } = periodSales
     const grossRevenue = curr.reduce((sum, s) => sum + s.amount, 0)
     const prevGrossRevenue = prev.reduce((sum, s) => sum + s.amount, 0)
-    const adSpend = period === '30d' ? syncedAdSpend : 0
+    const adSpend = syncedAdSpend
     const prevAdSpend = 0
     const impostoMeta = grossRevenue * taxPercent / 100
     const prevImpostoMeta = prevGrossRevenue * taxPercent / 100
@@ -233,11 +233,11 @@ export default function Dashboard() {
 
   const kpis: { label: string; value: string; curr: number; prev: number; icon: React.ElementType; inverted?: boolean; noCompare?: boolean; subtitle?: string }[] = [
     { label: 'Faturamento Bruto', value: formatCurrency(metrics.grossRevenue), curr: metrics.grossRevenue, prev: metrics.prevGrossRevenue, icon: DollarSign },
-    { label: 'Gasto com Ads',     value: formatCurrency(metrics.adSpend),      curr: metrics.adSpend,      prev: metrics.prevAdSpend,      icon: Target, inverted: true },
+    { label: 'Gasto com Ads',     value: formatCurrency(metrics.adSpend),      curr: metrics.adSpend,      prev: metrics.prevAdSpend,      icon: Target, noCompare: true },
     { label: 'Lucro',             value: formatCurrency(metrics.profit),       curr: metrics.profit,       prev: metrics.prevProfit,       icon: Wallet },
-    { label: 'ROI',               value: `${metrics.roi.toFixed(1)}%`,         curr: metrics.roi,          prev: metrics.prevRoi,          icon: TrendingUp },
-    { label: 'ROAS',              value: `${metrics.roas.toFixed(2)}x`,        curr: metrics.roas,         prev: metrics.prevRoas,         icon: BarChart3 },
-    { label: 'CPA',               value: formatCurrency(metrics.cpa),          curr: metrics.cpa,          prev: metrics.prevCpa,          icon: Zap, inverted: true },
+    { label: 'ROI',               value: `${metrics.roi.toFixed(1)}%`,         curr: metrics.roi,          prev: metrics.prevRoi,          icon: TrendingUp, noCompare: true },
+    { label: 'ROAS',              value: `${metrics.roas.toFixed(2)}x`,        curr: metrics.roas,         prev: metrics.prevRoas,         icon: BarChart3, noCompare: true },
+    { label: 'CPA',               value: formatCurrency(metrics.cpa),          curr: metrics.cpa,          prev: metrics.prevCpa,          icon: Zap, noCompare: true },
     { label: 'Imposto Meta',      value: formatCurrency(metrics.impostoMeta),  curr: metrics.impostoMeta,  prev: metrics.prevImpostoMeta,  icon: Receipt, noCompare: true },
     { label: 'Vendas',            value: formatNumber(metrics.sales),          curr: metrics.sales,        prev: metrics.prevSales,        icon: ShoppingCart },
     { label: 'Reembolsos',        value: formatCurrency(metrics.refundAmount), curr: metrics.refundAmount, prev: metrics.prevRefundAmount, icon: RotateCcw, inverted: true, subtitle: `(${formatNumber(metrics.refundCount)})` },
