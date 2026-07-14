@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       `${FB_API}/act_${accountId}/campaigns?fields=id,name,status,objective,daily_budget,lifetime_budget&limit=200&access_token=${token}`
     )
     const campaignInsights = await fetchAllPages(
-      `${FB_API}/act_${accountId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,cpm,cpc,ctr,reach&time_range=${timeRange}&limit=500&access_token=${token}`
+      `${FB_API}/act_${accountId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,cpm,cpc,ctr,reach,cost_per_thruplay&time_range=${timeRange}&limit=500&access_token=${token}`
     )
     const campaignInsightsMap = new Map(campaignInsights.map(i => [i.campaign_id, i]))
 
@@ -78,6 +78,8 @@ Deno.serve(async (req) => {
         cpc: Number(ins.cpc ?? 0),
         ctr: Number(ins.ctr ?? 0),
         reach: Number(ins.reach ?? 0),
+        cpv: Number(ins.cost_per_thruplay?.[0]?.value ?? 0),
+        cpi: 0,
         date_start: fmt(since),
         date_stop: fmt(until),
         last_synced_at: new Date().toISOString(),

@@ -52,6 +52,9 @@ export interface Campaign {
   cpa: number
   cpm: number
   cpc: number
+  ctr: number
+  cpv: number
+  cpi: number
   impressions: number
   clicks: number
   adSets: AdSet[]
@@ -116,4 +119,13 @@ export interface FacebookAccount {
   id: string
   name: string
   account_id: string
+}
+
+export interface ActionLogEntry {
+  id: string
+  entryDate: string
+  campaignName: string | null
+  actionTaken: string
+  observedResult: string | null
+  createdAt: string
 }

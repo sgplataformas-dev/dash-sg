@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { format } from 'date-fns'
-import type { Sale, Campaign, CampaignStatus } from '@/types'
+import type { Sale, Campaign, CampaignStatus, ActionLogEntry } from '@/types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
@@ -68,12 +68,13 @@ export interface RawSale {
   productName: string | null
   paymentMethod: string | null
   utmSource: string | null
+  customerEmail: string | null
 }
 
 export async function fetchRawSales(): Promise<RawSale[]> {
   const { data, error } = await supabase
     .from('sales')
-    .select('sale_date, amount, status, is_organic, product_name, payment_method, utm_source')
+    .select('sale_date, amount, status, is_organic, product_name, payment_method, utm_source, customer_email')
     .order('sale_date', { ascending: false })
     .limit(2000)
   if (error || !data) return []
@@ -85,6 +86,7 @@ export async function fetchRawSales(): Promise<RawSale[]> {
     productName: row.product_name,
     paymentMethod: row.payment_method,
     utmSource: row.utm_source,
+    customerEmail: row.customer_email,
   }))
 }
 
@@ -101,7 +103,7 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
   if (until) salesQuery = salesQuery.lte('sale_date', until.toISOString())
 
   const [campaignsRes, adSetsRes, adsRes, salesRes] = await Promise.all([
-    supabase.from('campaigns').select('id, campaign_name, status, spend, impressions, clicks, cpm, cpc'),
+    supabase.from('campaigns').select('id, campaign_name, status, spend, impressions, clicks, cpm, cpc, ctr, cpv, cpi'),
     supabase.from('ad_sets').select('id, campaign_id, adset_name, status, spend, impressions, clicks, cpm, cpc'),
     supabase.from('ads').select('id, ad_set_id, ad_name, status, spend, impressions, clicks, cpm, cpc'),
     salesQuery,
@@ -189,11 +191,47 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
       cpa: perf.sales > 0 ? spend / perf.sales : 0,
       cpm: Number(c.cpm ?? 0),
       cpc: Number(c.cpc ?? 0),
+      ctr: Number(c.ctr ?? 0),
+      cpv: Number(c.cpv ?? 0),
+      cpi: Number(c.cpi ?? 0),
       impressions: Number(c.impressions ?? 0),
       clicks: Number(c.clicks ?? 0),
       adSets,
     }
   })
+}
+
+export async function fetchActionLog(): Promise<ActionLogEntry[]> {
+  const { data, error } = await supabase
+    .from('action_log')
+    .select('id, entry_date, campaign_name, action_taken, observed_result, created_at')
+    .order('entry_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(100)
+  if (error || !data) return []
+  return data.map(row => ({
+    id: row.id,
+    entryDate: row.entry_date,
+    campaignName: row.campaign_name,
+    actionTaken: row.action_taken,
+    observedResult: row.observed_result,
+    createdAt: row.created_at,
+  }))
+}
+
+export async function addActionLogEntry(entry: { entryDate: string; campaignName: string | null; actionTaken: string; observedResult: string | null }): Promise<void> {
+  const { error } = await supabase.from('action_log').insert({
+    entry_date: entry.entryDate,
+    campaign_name: entry.campaignName,
+    action_taken: entry.actionTaken,
+    observed_result: entry.observedResult,
+  })
+  if (error) throw error
+}
+
+export async function deleteActionLogEntry(id: string): Promise<void> {
+  const { error } = await supabase.from('action_log').delete().eq('id', id)
+  if (error) throw error
 }
 
 export function subscribeToSales(onChange: () => void): () => void {
