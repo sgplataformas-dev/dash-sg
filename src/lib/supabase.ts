@@ -147,6 +147,19 @@ export async function fetchAccountDailyInsights(since: Date, until: Date): Promi
   return { spend, impressions, clicks, cpm, ctr, cpc, cpv, cpi, fbPurchases, linkClicks, pageViews, viewContent, initiateCheckout }
 }
 
+export async function fetchDailySpend(since: Date, until: Date): Promise<Map<string, number>> {
+  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+  const { data, error } = await supabase
+    .from('fb_account_daily_insights')
+    .select('date, spend')
+    .gte('date', fmt(since))
+    .lte('date', fmt(until))
+  const map = new Map<string, number>()
+  if (error || !data) return map
+  data.forEach(r => map.set(r.date, Number(r.spend ?? 0)))
+  return map
+}
+
 export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Campaign[]> {
   let salesQuery = supabase
     .from('sales')

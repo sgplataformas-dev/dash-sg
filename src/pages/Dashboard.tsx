@@ -17,7 +17,7 @@ import { resolvePeriodRange, type PeriodOption } from '@/lib/period'
 import { formatCurrency, formatNumber } from '@/lib/utils'
 import {
   fetchRawSales, fetchCampaignsFull, subscribeToSales, getSetting, type RawSale,
-  fetchAccountDailyInsights, type MetaAdsAgg, EMPTY_META_AGG,
+  fetchAccountDailyInsights, type MetaAdsAgg, EMPTY_META_AGG, fetchDailySpend,
 } from '@/lib/supabase'
 import type { Rate, Campaign } from '@/types'
 
@@ -119,6 +119,7 @@ export default function Dashboard() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [metaDaily, setMetaDaily] = useState<MetaAdsAgg>(EMPTY_META_AGG)
   const [prevMetaDaily, setPrevMetaDaily] = useState<MetaAdsAgg>(EMPTY_META_AGG)
+  const [dailySpend, setDailySpend] = useState<Map<string, number>>(new Map())
 
   const { since, until } = useMemo(() => resolvePeriodRange(period, customSince, customUntil), [period, customSince, customUntil])
   const { prevSince, prevUntil } = useMemo(() => {
@@ -140,6 +141,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetchAccountDailyInsights(since, until).then(setMetaDaily)
     fetchAccountDailyInsights(prevSince, prevUntil).then(setPrevMetaDaily)
+    fetchDailySpend(since, until).then(setDailySpend)
   }, [since, until, prevSince, prevUntil])
 
   const syncedAdSpend = metaDaily.spend
@@ -205,9 +207,13 @@ export default function Dashboard() {
     return eachDayOfInterval({ start: since, end: until }).map(day => {
       const daySales = approved.filter(s => isSameDay(new Date(s.date), day))
       const dayRevenue = daySales.reduce((sum, s) => sum + s.amount, 0)
-      return { date: formatDateFns(day, 'dd/MM'), revenue: dayRevenue, spend: 0, sales: daySales.length, cpa: 0, roas: 0 }
+      const daySpend = dailySpend.get(formatDateFns(day, 'yyyy-MM-dd')) ?? 0
+      const daySalesCount = daySales.length
+      const cpa = daySpend > 0 && daySalesCount > 0 ? daySpend / daySalesCount : 0
+      const roas = daySpend > 0 ? dayRevenue / daySpend : 0
+      return { date: formatDateFns(day, 'dd/MM'), revenue: dayRevenue, spend: daySpend, sales: daySalesCount, cpa, roas }
     })
-  }, [approved, since, until])
+  }, [approved, since, until, dailySpend])
 
   const salesBySource = useMemo(() => {
     const counts = new Map<string, number>()
