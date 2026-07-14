@@ -74,7 +74,7 @@ export interface RawSale {
 export async function fetchRawSales(): Promise<RawSale[]> {
   const { data, error } = await supabase
     .from('sales')
-    .select('sale_date, amount, status, is_organic, product_name, payment_method, utm_source, customer_email')
+    .select('sale_date, amount, status, is_organic, product_name, payment_method, utm_source, buyer_email')
     .order('sale_date', { ascending: false })
     .limit(2000)
   if (error || !data) return []
@@ -86,7 +86,7 @@ export async function fetchRawSales(): Promise<RawSale[]> {
     productName: row.product_name,
     paymentMethod: row.payment_method,
     utmSource: row.utm_source,
-    customerEmail: row.customer_email,
+    customerEmail: row.buyer_email,
   }))
 }
 
