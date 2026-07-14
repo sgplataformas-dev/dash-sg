@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatCurrency, formatNumber } from '@/lib/utils'
 import { fetchCampaignsFull } from '@/lib/supabase'
+import { PeriodFilter } from '@/components/PeriodFilter'
+import { resolvePeriodRange, type PeriodOption } from '@/lib/period'
+import { subDays, format as formatDateFns } from 'date-fns'
 import type { Campaign, CampaignStatus } from '@/types'
 
 const PAGE_SIZE = 5
@@ -20,13 +23,18 @@ export default function Campaigns() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<CampaignStatus | 'all'>('all')
+  const [period, setPeriod] = useState<PeriodOption>('30d')
+  const [customSince, setCustomSince] = useState(formatDateFns(subDays(new Date(), 6), 'yyyy-MM-dd'))
+  const [customUntil, setCustomUntil] = useState(formatDateFns(new Date(), 'yyyy-MM-dd'))
   const [page, setPage] = useState(1)
   const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set())
   const [expandedAdSets, setExpandedAdSets] = useState<Set<string>>(new Set())
 
+  const { since, until } = useMemo(() => resolvePeriodRange(period, customSince, customUntil), [period, customSince, customUntil])
+
   useEffect(() => {
-    fetchCampaignsFull().then(setCampaigns)
-  }, [])
+    fetchCampaignsFull(since, until).then(setCampaigns)
+  }, [since, until])
 
   const filtered = useMemo(() => {
     return campaigns.filter(c => {
@@ -93,6 +101,14 @@ export default function Campaigns() {
             <SelectItem value="paused">Pausado</SelectItem>
           </SelectContent>
         </Select>
+        <PeriodFilter
+          period={period}
+          onPeriodChange={(p) => { setPeriod(p); setPage(1) }}
+          customSince={customSince}
+          customUntil={customUntil}
+          onCustomSinceChange={setCustomSince}
+          onCustomUntilChange={setCustomUntil}
+        />
       </div>
 
       {/* Table */}

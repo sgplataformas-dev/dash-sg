@@ -7,14 +7,15 @@ import {
   ArrowUpRight, ArrowDownRight, DollarSign, TrendingUp, Target,
   ShoppingCart, Wallet, Receipt, ShoppingBag, BarChart3, Zap, CreditCard, RotateCcw,
 } from 'lucide-react'
-import { subDays, startOfDay, isSameDay, format as formatDateFns } from 'date-fns'
+import { subDays, isSameDay, eachDayOfInterval, format as formatDateFns } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { PeriodFilter } from '@/components/PeriodFilter'
+import { resolvePeriodRange, type PeriodOption } from '@/lib/period'
 import { formatCurrency, formatNumber } from '@/lib/utils'
 import { fetchRawSales, fetchCampaignsFull, subscribeToSales, getSetting, type RawSale } from '@/lib/supabase'
-import type { Period, Rate, Campaign } from '@/types'
+import type { Rate, Campaign } from '@/types'
 
 const PIE_COLORS = ['#74B9FF', '#00B894', '#6C5CE7', '#FDCB6E']
 const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
@@ -82,15 +83,28 @@ function ProgressList({ items }: { items: { label: string; count: number; extra?
 }
 
 export default function Dashboard() {
-  const [period, setPeriod] = useState<Period>('7d')
+  const [period, setPeriod] = useState<PeriodOption>('7d')
+  const [customSince, setCustomSince] = useState(formatDateFns(subDays(new Date(), 6), 'yyyy-MM-dd'))
+  const [customUntil, setCustomUntil] = useState(formatDateFns(new Date(), 'yyyy-MM-dd'))
   const [sales, setSales] = useState<RawSale[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
 
+  const { since, until } = useMemo(() => resolvePeriodRange(period, customSince, customUntil), [period, customSince, customUntil])
+  const { prevSince, prevUntil } = useMemo(() => {
+    const duration = until.getTime() - since.getTime()
+    const pUntil = new Date(since.getTime() - 1)
+    const pSince = new Date(pUntil.getTime() - duration)
+    return { prevSince: pSince, prevUntil: pUntil }
+  }, [since, until])
+
   useEffect(() => {
     fetchRawSales().then(setSales)
-    fetchCampaignsFull().then(setCampaigns)
     return subscribeToSales(() => { fetchRawSales().then(setSales) })
   }, [])
+
+  useEffect(() => {
+    fetchCampaignsFull(since, until).then(setCampaigns)
+  }, [since, until])
 
   const syncedAdSpend = useMemo(() => campaigns.reduce((sum, c) => sum + c.spend, 0), [campaigns])
 
@@ -103,19 +117,14 @@ export default function Dashboard() {
 
   const approved = useMemo(() => sales.filter(s => s.status === 'approved'), [sales])
   const refunded = useMemo(() => sales.filter(s => s.status === 'refunded' || s.status === 'chargeback'), [sales])
-  const periodDays = period === 'today' ? 1 : period === '7d' ? 7 : 30
 
-  const splitByPeriod = (list: RawSale[]) => {
-    const cutoff = subDays(startOfDay(new Date()), periodDays - 1)
-    const prevCutoff = subDays(cutoff, periodDays)
-    return {
-      curr: list.filter(s => new Date(s.date) >= cutoff),
-      prev: list.filter(s => { const d = new Date(s.date); return d >= prevCutoff && d < cutoff }),
-    }
-  }
+  const splitByPeriod = (list: RawSale[]) => ({
+    curr: list.filter(s => { const d = new Date(s.date); return d >= since && d <= until }),
+    prev: list.filter(s => { const d = new Date(s.date); return d >= prevSince && d <= prevUntil }),
+  })
 
-  const periodSales = useMemo(() => splitByPeriod(approved), [approved, periodDays])
-  const periodRefunds = useMemo(() => splitByPeriod(refunded), [refunded, periodDays])
+  const periodSales = useMemo(() => splitByPeriod(approved), [approved, since, until, prevSince, prevUntil])
+  const periodRefunds = useMemo(() => splitByPeriod(refunded), [refunded, since, until, prevSince, prevUntil])
 
   const metrics = useMemo(() => {
     const { curr, prev } = periodSales
@@ -150,18 +159,15 @@ export default function Dashboard() {
       ticketMedio, prevTicketMedio, comprasFB: 0, prevComprasFB: 0,
       refundAmount, prevRefundAmount, refundCount, prevRefundCount,
     }
-  }, [periodSales, periodRefunds, taxPercent, period, syncedAdSpend])
+  }, [periodSales, periodRefunds, taxPercent, syncedAdSpend])
 
   const chartData = useMemo(() => {
-    const buckets: { date: string; revenue: number; spend: number; sales: number; cpa: number; roas: number }[] = []
-    for (let i = periodDays - 1; i >= 0; i--) {
-      const day = subDays(startOfDay(new Date()), i)
+    return eachDayOfInterval({ start: since, end: until }).map(day => {
       const daySales = approved.filter(s => isSameDay(new Date(s.date), day))
       const dayRevenue = daySales.reduce((sum, s) => sum + s.amount, 0)
-      buckets.push({ date: formatDateFns(day, 'dd/MM'), revenue: dayRevenue, spend: 0, sales: daySales.length, cpa: 0, roas: 0 })
-    }
-    return buckets
-  }, [approved, periodDays])
+      return { date: formatDateFns(day, 'dd/MM'), revenue: dayRevenue, spend: 0, sales: daySales.length, cpa: 0, roas: 0 }
+    })
+  }, [approved, since, until])
 
   const salesBySource = useMemo(() => {
     const counts = new Map<string, number>()
@@ -247,18 +253,16 @@ export default function Dashboard() {
   return (
     <div className="space-y-5">
       {/* Period selector */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-lg font-semibold text-[#E0E0E0]">Visão Geral</h2>
-        <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-          <SelectTrigger className="w-36 h-9 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="today">Hoje</SelectItem>
-            <SelectItem value="7d">7 dias</SelectItem>
-            <SelectItem value="30d">30 dias</SelectItem>
-          </SelectContent>
-        </Select>
+        <PeriodFilter
+          period={period}
+          onPeriodChange={setPeriod}
+          customSince={customSince}
+          customUntil={customUntil}
+          onCustomSinceChange={setCustomSince}
+          onCustomUntilChange={setCustomUntil}
+        />
       </div>
 
       {/* KPI Cards */}

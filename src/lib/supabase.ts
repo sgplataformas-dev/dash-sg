@@ -37,11 +37,14 @@ const dbStatusToSaleStatus: Record<string, Sale['status']> = {
   chargeback: 'reembolsada',
 }
 
-export async function fetchSales(): Promise<Sale[]> {
-  const { data, error } = await supabase
+export async function fetchSales(since?: Date, until?: Date): Promise<Sale[]> {
+  let query = supabase
     .from('sales')
     .select('id, sale_date, product_name, amount, checkout_platform, utm_campaign, status, is_organic')
     .order('sale_date', { ascending: false })
+  if (since) query = query.gte('sale_date', since.toISOString())
+  if (until) query = query.lte('sale_date', until.toISOString())
+  const { data, error } = await query
   if (error || !data) return []
   return data.map(row => ({
     id: row.id,
@@ -89,13 +92,38 @@ function fbStatus(s: string | null): CampaignStatus {
   return s === 'ACTIVE' ? 'active' : 'paused'
 }
 
-export async function fetchCampaignsFull(): Promise<Campaign[]> {
-  const [campaignsRes, adSetsRes, adsRes] = await Promise.all([
-    supabase.from('v_campaign_performance').select('campaign_id, campaign_name, status, spend, impressions, clicks, cpm, cpc, revenue, sales, roas, cpa'),
+export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Campaign[]> {
+  let salesQuery = supabase
+    .from('sales')
+    .select('matched_campaign_id, matched_ad_set_id, matched_ad_id, amount')
+    .eq('status', 'approved')
+  if (since) salesQuery = salesQuery.gte('sale_date', since.toISOString())
+  if (until) salesQuery = salesQuery.lte('sale_date', until.toISOString())
+
+  const [campaignsRes, adSetsRes, adsRes, salesRes] = await Promise.all([
+    supabase.from('campaigns').select('id, campaign_name, status, spend, impressions, clicks, cpm, cpc'),
     supabase.from('ad_sets').select('id, campaign_id, adset_name, status, spend, impressions, clicks, cpm, cpc'),
-    supabase.from('v_ad_performance').select('ad_id, ad_name, status, spend, impressions, clicks, cpm, cpc, revenue, sales, roas, cpa, ad_set_id'),
+    supabase.from('ads').select('id, ad_set_id, ad_name, status, spend, impressions, clicks, cpm, cpc'),
+    salesQuery,
   ])
   if (campaignsRes.error || !campaignsRes.data) return []
+
+  type Perf = { revenue: number; sales: number }
+  const sumBy = (key: 'matched_campaign_id' | 'matched_ad_set_id' | 'matched_ad_id') => {
+    const map = new Map<string, Perf>()
+    ;(salesRes.data ?? []).forEach((s: any) => {
+      const id = s[key]
+      if (!id) return
+      const curr = map.get(id) ?? { revenue: 0, sales: 0 }
+      curr.revenue += Number(s.amount)
+      curr.sales += 1
+      map.set(id, curr)
+    })
+    return map
+  }
+  const campaignPerf = sumBy('matched_campaign_id')
+  const adSetPerf = sumBy('matched_ad_set_id')
+  const adPerf = sumBy('matched_ad_id')
 
   const adsByAdSet = new Map<string, typeof adsRes.data>()
   ;(adsRes.data ?? []).forEach(ad => {
@@ -106,54 +134,59 @@ export async function fetchCampaignsFull(): Promise<Campaign[]> {
   })
 
   return campaignsRes.data.map(c => {
-    const campaignAdSets = (adSetsRes.data ?? []).filter(a => a.campaign_id === c.campaign_id)
+    const campaignAdSets = (adSetsRes.data ?? []).filter(a => a.campaign_id === c.id)
     const adSets = campaignAdSets.map(a => {
       const ads = adsByAdSet.get(a.id) ?? []
-      const revenue = ads.reduce((sum, ad) => sum + Number(ad.revenue ?? 0), 0)
-      const salesCount = ads.reduce((sum, ad) => sum + Number(ad.sales ?? 0), 0)
+      const perf: Perf = adSetPerf.get(a.id) ?? { revenue: 0, sales: 0 }
       const spend = Number(a.spend ?? 0)
       return {
         id: a.id,
         name: a.adset_name,
         status: fbStatus(a.status),
         spend,
-        sales: salesCount,
-        revenue,
-        roi: spend > 0 ? ((revenue - spend) / spend) * 100 : 0,
-        roas: spend > 0 ? revenue / spend : 0,
-        cpa: salesCount > 0 ? spend / salesCount : 0,
+        sales: perf.sales,
+        revenue: perf.revenue,
+        roi: spend > 0 ? ((perf.revenue - spend) / spend) * 100 : 0,
+        roas: spend > 0 ? perf.revenue / spend : 0,
+        cpa: perf.sales > 0 ? spend / perf.sales : 0,
         cpm: Number(a.cpm ?? 0),
         cpc: Number(a.cpc ?? 0),
         impressions: Number(a.impressions ?? 0),
         clicks: Number(a.clicks ?? 0),
-        ads: ads.map(ad => ({
-          id: ad.ad_id,
-          name: ad.ad_name,
-          status: fbStatus(ad.status),
-          spend: Number(ad.spend ?? 0),
-          sales: Number(ad.sales ?? 0),
-          revenue: Number(ad.revenue ?? 0),
-          roi: Number(ad.spend) > 0 ? ((Number(ad.revenue ?? 0) - Number(ad.spend)) / Number(ad.spend)) * 100 : 0,
-          roas: Number(ad.roas ?? 0),
-          cpa: Number(ad.cpa ?? 0),
-          cpm: Number(ad.cpm ?? 0),
-          cpc: Number(ad.cpc ?? 0),
-          impressions: Number(ad.impressions ?? 0),
-          clicks: Number(ad.clicks ?? 0),
-        })),
+        ads: ads.map(ad => {
+          const adP: Perf = adPerf.get(ad.id) ?? { revenue: 0, sales: 0 }
+          const adSpend = Number(ad.spend ?? 0)
+          return {
+            id: ad.id,
+            name: ad.ad_name,
+            status: fbStatus(ad.status),
+            spend: adSpend,
+            sales: adP.sales,
+            revenue: adP.revenue,
+            roi: adSpend > 0 ? ((adP.revenue - adSpend) / adSpend) * 100 : 0,
+            roas: adSpend > 0 ? adP.revenue / adSpend : 0,
+            cpa: adP.sales > 0 ? adSpend / adP.sales : 0,
+            cpm: Number(ad.cpm ?? 0),
+            cpc: Number(ad.cpc ?? 0),
+            impressions: Number(ad.impressions ?? 0),
+            clicks: Number(ad.clicks ?? 0),
+          }
+        }),
       }
     })
 
+    const perf: Perf = campaignPerf.get(c.id) ?? { revenue: 0, sales: 0 }
+    const spend = Number(c.spend ?? 0)
     return {
-      id: c.campaign_id,
+      id: c.id,
       name: c.campaign_name,
       status: fbStatus(c.status),
-      spend: Number(c.spend ?? 0),
-      sales: Number(c.sales ?? 0),
-      revenue: Number(c.revenue ?? 0),
-      roi: Number(c.spend) > 0 ? ((Number(c.revenue ?? 0) - Number(c.spend)) / Number(c.spend)) * 100 : 0,
-      roas: Number(c.roas ?? 0),
-      cpa: Number(c.cpa ?? 0),
+      spend,
+      sales: perf.sales,
+      revenue: perf.revenue,
+      roi: spend > 0 ? ((perf.revenue - spend) / spend) * 100 : 0,
+      roas: spend > 0 ? perf.revenue / spend : 0,
+      cpa: perf.sales > 0 ? spend / perf.sales : 0,
       cpm: Number(c.cpm ?? 0),
       cpc: Number(c.cpc ?? 0),
       impressions: Number(c.impressions ?? 0),

@@ -6,6 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatCurrency } from '@/lib/utils'
 import { fetchSales, subscribeToSales } from '@/lib/supabase'
+import { PeriodFilter } from '@/components/PeriodFilter'
+import { resolvePeriodRange, type PeriodOption } from '@/lib/period'
+import { subDays, format as formatDateFns } from 'date-fns'
 import type { CheckoutType, Sale, SaleStatus, SaleType } from '@/types'
 
 const statusVariant: Record<SaleStatus, 'success' | 'warning' | 'error'> = {
@@ -26,11 +29,16 @@ export default function Sales() {
   const [checkout, setCheckout] = useState<CheckoutType | 'all'>('all')
   const [type, setType] = useState<SaleType | 'all'>('all')
   const [status, setStatus] = useState<SaleStatus | 'all'>('all')
+  const [period, setPeriod] = useState<PeriodOption>('30d')
+  const [customSince, setCustomSince] = useState(formatDateFns(subDays(new Date(), 6), 'yyyy-MM-dd'))
+  const [customUntil, setCustomUntil] = useState(formatDateFns(new Date(), 'yyyy-MM-dd'))
+
+  const { since, until } = useMemo(() => resolvePeriodRange(period, customSince, customUntil), [period, customSince, customUntil])
 
   useEffect(() => {
-    fetchSales().then(setSales)
-    return subscribeToSales(() => { fetchSales().then(setSales) })
-  }, [])
+    fetchSales(since, until).then(setSales)
+    return subscribeToSales(() => { fetchSales(since, until).then(setSales) })
+  }, [since, until])
 
   const filtered = useMemo(() => {
     return sales.filter(s => {
@@ -86,6 +94,14 @@ export default function Sales() {
             <SelectItem value="reembolsada">Reembolsada</SelectItem>
           </SelectContent>
         </Select>
+        <PeriodFilter
+          period={period}
+          onPeriodChange={setPeriod}
+          customSince={customSince}
+          customUntil={customUntil}
+          onCustomSinceChange={setCustomSince}
+          onCustomUntilChange={setCustomUntil}
+        />
       </div>
 
       {/* Summary */}
