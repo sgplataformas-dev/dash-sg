@@ -40,21 +40,21 @@ const dbStatusToSaleStatus: Record<string, Sale['status']> = {
 export async function fetchSales(since?: Date, until?: Date): Promise<Sale[]> {
   let query = supabase
     .from('sales')
-    .select('id, sale_date, product_name, amount, checkout_platform, utm_campaign, status, is_organic')
+    .select('id, sale_date, product_name, amount, checkout_platform, utm_campaign, status, is_organic, matched_campaign:campaigns!matched_campaign_id(campaign_name), matched_ad_set:ad_sets!matched_ad_set_id(adset_name), matched_ad:ads!matched_ad_id(ad_name)')
     .order('sale_date', { ascending: false })
   if (since) query = query.gte('sale_date', since.toISOString())
   if (until) query = query.lte('sale_date', until.toISOString())
   const { data, error } = await query
   if (error || !data) return []
-  return data.map(row => ({
+  return data.map((row: any) => ({
     id: row.id,
     date: format(new Date(row.sale_date), 'dd/MM/yyyy'),
     product: row.product_name ?? '—',
     value: Number(row.amount),
     checkout: (row.checkout_platform.charAt(0).toUpperCase() + row.checkout_platform.slice(1)) as Sale['checkout'],
-    campaign: row.utm_campaign ?? '—',
-    adSet: '—',
-    ad: '—',
+    campaign: row.matched_campaign?.campaign_name ?? row.utm_campaign ?? '—',
+    adSet: row.matched_ad_set?.adset_name ?? '—',
+    ad: row.matched_ad?.ad_name ?? '—',
     status: dbStatusToSaleStatus[row.status] ?? 'pendente',
     type: row.is_organic ? 'organica' : 'paga',
   }))
