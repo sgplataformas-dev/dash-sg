@@ -6,23 +6,20 @@ import {
 import {
   ArrowUpRight, ArrowDownRight, DollarSign, TrendingUp, Target,
   ShoppingCart, Wallet, Receipt, ShoppingBag, BarChart3, Zap, CreditCard, RotateCcw,
-  Eye, MousePointer2, Play, Smartphone, UserCheck, Plus, Trash2, NotebookPen,
+  Eye, MousePointer2, Play, Smartphone, UserCheck,
 } from 'lucide-react'
 import { subDays, isSameDay, eachDayOfInterval, format as formatDateFns } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { PeriodFilter } from '@/components/PeriodFilter'
 import { resolvePeriodRange, type PeriodOption } from '@/lib/period'
 import { formatCurrency, formatNumber } from '@/lib/utils'
 import {
   fetchRawSales, fetchCampaignsFull, subscribeToSales, getSetting, type RawSale,
-  fetchActionLog, addActionLogEntry, deleteActionLogEntry,
   fetchAccountDailyInsights, type MetaAdsAgg,
 } from '@/lib/supabase'
-import type { Rate, Campaign, ActionLogEntry } from '@/types'
+import type { Rate, Campaign } from '@/types'
 
 const PIE_COLORS = ['#4FA3FF', '#12E28A', '#8B6BF2', '#FFC24B']
 const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
@@ -122,11 +119,6 @@ export default function Dashboard() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [metaDaily, setMetaDaily] = useState<MetaAdsAgg>({ spend: 0, impressions: 0, clicks: 0, cpm: 0, ctr: 0, cpc: 0, cpv: 0, cpi: 0, fbPurchases: 0 })
   const [prevMetaDaily, setPrevMetaDaily] = useState<MetaAdsAgg>({ spend: 0, impressions: 0, clicks: 0, cpm: 0, ctr: 0, cpc: 0, cpv: 0, cpi: 0, fbPurchases: 0 })
-  const [actionLog, setActionLog] = useState<ActionLogEntry[]>([])
-  const [logCampaign, setLogCampaign] = useState('')
-  const [logAction, setLogAction] = useState('')
-  const [logResult, setLogResult] = useState('')
-  const [savingLog, setSavingLog] = useState(false)
 
   const { since, until } = useMemo(() => resolvePeriodRange(period, customSince, customUntil), [period, customSince, customUntil])
   const { prevSince, prevUntil } = useMemo(() => {
@@ -149,33 +141,6 @@ export default function Dashboard() {
     fetchAccountDailyInsights(since, until).then(setMetaDaily)
     fetchAccountDailyInsights(prevSince, prevUntil).then(setPrevMetaDaily)
   }, [since, until, prevSince, prevUntil])
-
-  const loadActionLog = () => { fetchActionLog().then(setActionLog) }
-  useEffect(() => { loadActionLog() }, [])
-
-  const handleAddLogEntry = async () => {
-    if (!logAction.trim()) return
-    setSavingLog(true)
-    try {
-      await addActionLogEntry({
-        entryDate: formatDateFns(new Date(), 'yyyy-MM-dd'),
-        campaignName: logCampaign.trim() || null,
-        actionTaken: logAction.trim(),
-        observedResult: logResult.trim() || null,
-      })
-      setLogCampaign('')
-      setLogAction('')
-      setLogResult('')
-      loadActionLog()
-    } finally {
-      setSavingLog(false)
-    }
-  }
-
-  const handleDeleteLogEntry = async (id: string) => {
-    await deleteActionLogEntry(id)
-    loadActionLog()
-  }
 
   const syncedAdSpend = metaDaily.spend
 
@@ -381,63 +346,6 @@ export default function Dashboard() {
           {crossKpis.map(kpi => <MetricCard key={kpi.label} {...kpi} />)}
         </div>
       </div>
-
-      {/* Diário de Ações */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <NotebookPen className="w-4 h-4 text-brand-green" />
-            <CardTitle className="text-base">Diário de Ações</CardTitle>
-          </div>
-          <p className="text-xs text-muted-foreground">Registre ações tomadas e resultados observados para medir a efetividade ao longo do tempo.</p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <Input
-              placeholder="Campanha (opcional)"
-              value={logCampaign}
-              onChange={e => setLogCampaign(e.target.value)}
-            />
-            <Input
-              placeholder="Ação tomada"
-              value={logAction}
-              onChange={e => setLogAction(e.target.value)}
-              className="sm:col-span-1"
-            />
-            <div className="flex gap-2">
-              <Input
-                placeholder="Resultado observado (opcional)"
-                value={logResult}
-                onChange={e => setLogResult(e.target.value)}
-              />
-              <Button size="icon" onClick={handleAddLogEntry} disabled={savingLog || !logAction.trim()} className="flex-shrink-0">
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-thin">
-            {actionLog.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-6">Nenhum registro ainda. Adicione o primeiro acima.</p>
-            )}
-            {actionLog.map(entry => (
-              <div key={entry.id} className="flex items-start justify-between gap-3 bg-inner rounded-xl p-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-mono-tab text-muted-foreground">{formatDateFns(new Date(entry.entryDate + 'T00:00:00'), 'dd/MM/yyyy')}</span>
-                    {entry.campaignName && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-blue/10 text-brand-blue truncate max-w-[200px]">{entry.campaignName}</span>}
-                  </div>
-                  <p className="text-sm text-foreground mt-1">{entry.actionTaken}</p>
-                  {entry.observedResult && <p className="text-xs text-muted-foreground mt-0.5">→ {entry.observedResult}</p>}
-                </div>
-                <button onClick={() => handleDeleteLogEntry(entry.id)} className="text-muted-foreground hover:text-brand-red transition-colors flex-shrink-0">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Produtor / Coprodutor */}
       <div>
