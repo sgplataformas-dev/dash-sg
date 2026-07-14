@@ -37,11 +37,16 @@ export default function Campaigns() {
   }, [since, until])
 
   const filtered = useMemo(() => {
-    return campaigns.filter(c => {
-      if (statusFilter !== 'all' && c.status !== statusFilter) return false
-      if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false
-      return true
-    })
+    return campaigns
+      .filter(c => {
+        if (statusFilter !== 'all' && c.status !== statusFilter) return false
+        if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false
+        return true
+      })
+      .sort((a, b) => {
+        if (a.revenue !== b.revenue) return b.revenue - a.revenue
+        return b.spend - a.spend
+      })
   }, [campaigns, search, statusFilter])
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
