@@ -89,6 +89,10 @@ function MetricCard({ label, value, curr, prev, icon: Icon, inverted = false, no
   )
 }
 
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">{children}</h3>
+}
+
 function ProgressList({ items }: { items: { label: string; count: number; extra?: string }[] }) {
   const max = Math.max(1, ...items.map(i => i.count))
   return (
@@ -318,26 +322,32 @@ export default function Dashboard() {
   const revenueSparkline = chartData.map(d => d.revenue)
   const salesSparkline = chartData.map(d => d.sales)
 
-  const kpis: { label: string; value: string; curr: number; prev: number; icon: React.ElementType; inverted?: boolean; noCompare?: boolean; subtitle?: string; sparkline?: number[] }[] = [
+  type Kpi = { label: string; value: string; curr: number; prev: number; icon: React.ElementType; inverted?: boolean; noCompare?: boolean; subtitle?: string; sparkline?: number[] }
+
+  const paytKpis: Kpi[] = [
     { label: 'Faturamento Bruto', value: formatCurrency(metrics.grossRevenue), curr: metrics.grossRevenue, prev: metrics.prevGrossRevenue, icon: DollarSign, sparkline: revenueSparkline },
-    { label: 'Gasto com Ads',     value: formatCurrency(metrics.adSpend),      curr: metrics.adSpend,      prev: metrics.prevAdSpend,      icon: Target, noCompare: true },
-    { label: 'Lucro',             value: formatCurrency(metrics.profit),       curr: metrics.profit,       prev: metrics.prevProfit,       icon: Wallet },
-    { label: 'ROI',               value: `${metrics.roi.toFixed(1)}%`,         curr: metrics.roi,          prev: metrics.prevRoi,          icon: TrendingUp, noCompare: true },
-    { label: 'ROAS',              value: `${metrics.roas.toFixed(2)}x`,        curr: metrics.roas,         prev: metrics.prevRoas,         icon: BarChart3, noCompare: true },
-    { label: 'CPA',               value: formatCurrency(metrics.cpa),          curr: metrics.cpa,          prev: metrics.prevCpa,          icon: Zap, noCompare: true },
-    { label: 'Imposto Meta',      value: formatCurrency(metrics.impostoMeta),  curr: metrics.impostoMeta,  prev: metrics.prevImpostoMeta,  icon: Receipt, noCompare: true },
+    { label: 'Ticket Médio',      value: formatCurrency(metrics.ticketMedio),  curr: metrics.ticketMedio,  prev: metrics.prevTicketMedio,  icon: CreditCard },
     { label: 'Vendas Totais',     value: formatNumber(metrics.sales),          curr: metrics.sales,        prev: metrics.prevSales,        icon: ShoppingCart, sparkline: salesSparkline },
     { label: 'Vendas Únicas',     value: formatNumber(metrics.uniqueBuyers),   curr: metrics.uniqueBuyers, prev: metrics.prevUniqueBuyers, icon: UserCheck },
     { label: 'Reembolsos',        value: formatCurrency(metrics.refundAmount), curr: metrics.refundAmount, prev: metrics.prevRefundAmount, icon: RotateCcw, inverted: true, subtitle: `(${formatNumber(metrics.refundCount)})` },
-    { label: 'Compras FB',        value: formatNumber(metrics.comprasFB),      curr: metrics.comprasFB,    prev: metrics.prevComprasFB,    icon: ShoppingBag, noCompare: true },
+    { label: 'Imposto Meta',      value: formatCurrency(metrics.impostoMeta),  curr: metrics.impostoMeta,  prev: metrics.prevImpostoMeta,  icon: Receipt, noCompare: true },
   ]
 
-  const metaKpis: { label: string; value: string; curr: number; prev: number; icon: React.ElementType; inverted?: boolean; noCompare?: boolean }[] = [
-    { label: 'CPM',  value: formatCurrency(metaAgg.cpm),          curr: metaAgg.cpm, prev: 0, icon: Eye,           inverted: true, noCompare: true },
-    { label: 'CTR',  value: `${metaAgg.ctr.toFixed(2)}%`,         curr: metaAgg.ctr, prev: 0, icon: MousePointer2,                 noCompare: true },
-    { label: 'CPC',  value: formatCurrency(metaAgg.cpc),          curr: metaAgg.cpc, prev: 0, icon: MousePointer2, inverted: true, noCompare: true },
-    { label: 'CPV',  value: formatCurrency(metaAgg.cpv),          curr: metaAgg.cpv, prev: 0, icon: Play,          inverted: true, noCompare: true },
-    { label: 'CPI',  value: formatCurrency(metaAgg.cpi),          curr: metaAgg.cpi, prev: 0, icon: Smartphone,    inverted: true, noCompare: true },
+  const metaAdsKpis: Kpi[] = [
+    { label: 'Gasto com Ads', value: formatCurrency(metrics.adSpend), curr: metrics.adSpend, prev: metrics.prevAdSpend, icon: Target,         noCompare: true },
+    { label: 'CPM',            value: formatCurrency(metaAgg.cpm),    curr: metaAgg.cpm,      prev: 0,                  icon: Eye,            inverted: true, noCompare: true },
+    { label: 'CTR',            value: `${metaAgg.ctr.toFixed(2)}%`,   curr: metaAgg.ctr,      prev: 0,                  icon: MousePointer2,                  noCompare: true },
+    { label: 'CPC',            value: formatCurrency(metaAgg.cpc),    curr: metaAgg.cpc,      prev: 0,                  icon: MousePointer2,  inverted: true, noCompare: true },
+    { label: 'CPV',            value: formatCurrency(metaAgg.cpv),    curr: metaAgg.cpv,      prev: 0,                  icon: Play,           inverted: true, noCompare: true },
+    { label: 'CPI',            value: formatCurrency(metaAgg.cpi),    curr: metaAgg.cpi,      prev: 0,                  icon: Smartphone,     inverted: true, noCompare: true },
+    { label: 'Compras FB',     value: formatNumber(metrics.comprasFB), curr: metrics.comprasFB, prev: metrics.prevComprasFB, icon: ShoppingBag, noCompare: true },
+  ]
+
+  const crossKpis: Kpi[] = [
+    { label: 'Lucro', value: formatCurrency(metrics.profit), curr: metrics.profit, prev: metrics.prevProfit, icon: Wallet },
+    { label: 'ROI',   value: `${metrics.roi.toFixed(1)}%`,   curr: metrics.roi,    prev: metrics.prevRoi,    icon: TrendingUp, noCompare: true },
+    { label: 'ROAS',  value: `${metrics.roas.toFixed(2)}x`,  curr: metrics.roas,   prev: metrics.prevRoas,   icon: BarChart3,   noCompare: true },
+    { label: 'CPA',   value: formatCurrency(metrics.cpa),    curr: metrics.cpa,    prev: metrics.prevCpa,    icon: Zap,         noCompare: true },
   ]
 
   return (
@@ -355,27 +365,27 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-        {kpis.map(kpi => <MetricCard key={kpi.label} {...kpi} />)}
-      </div>
-
-      {/* Ticket Médio */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-        <MetricCard
-          label="Ticket Médio"
-          value={formatCurrency(metrics.ticketMedio)}
-          curr={metrics.ticketMedio}
-          prev={metrics.prevTicketMedio}
-          icon={CreditCard}
-        />
-      </div>
-
-      {/* Métricas Meta Ads */}
+      {/* Payt (receita) */}
       <div>
-        <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">Métricas Meta Ads</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          {metaKpis.map(kpi => <MetricCard key={kpi.label} {...kpi} />)}
+        <SectionTitle>Payt · Receita</SectionTitle>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+          {paytKpis.map(kpi => <MetricCard key={kpi.label} {...kpi} />)}
+        </div>
+      </div>
+
+      {/* Meta Ads (custo/tráfego) */}
+      <div>
+        <SectionTitle>Meta Ads · Custo &amp; Tráfego</SectionTitle>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          {metaAdsKpis.map(kpi => <MetricCard key={kpi.label} {...kpi} />)}
+        </div>
+      </div>
+
+      {/* Performance Cruzada (Payt x Meta) */}
+      <div>
+        <SectionTitle>Performance Cruzada</SectionTitle>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {crossKpis.map(kpi => <MetricCard key={kpi.label} {...kpi} />)}
         </div>
       </div>
 
@@ -438,7 +448,7 @@ export default function Dashboard() {
 
       {/* Produtor / Coprodutor */}
       <div>
-        <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">Produtor / Coprodutor</h3>
+        <SectionTitle>Produtor / Coprodutor</SectionTitle>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <MetricCard label="Lucro × 50% Produtor"    value={formatCurrency(metrics.profit * 0.5)}   curr={metrics.profit * 0.5}   prev={metrics.prevProfit * 0.5}   icon={Wallet} />
           <MetricCard label="Lucro × 50% Coprodutor"  value={formatCurrency(metrics.profit * 0.5)}   curr={metrics.profit * 0.5}   prev={metrics.prevProfit * 0.5}   icon={Wallet} />
@@ -446,6 +456,9 @@ export default function Dashboard() {
           <MetricCard label="Gastos × 50% Coprodutor" value={formatCurrency(metrics.adSpend * 0.5)}  curr={metrics.adSpend * 0.5}  prev={metrics.prevAdSpend * 0.5}  icon={Target} noCompare />
         </div>
       </div>
+
+      {/* Gráficos */}
+      <SectionTitle>Gráficos</SectionTitle>
 
       {/* CPA x ROAS x Vendas + Funil de Conversão */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -617,6 +630,9 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {/* Detalhamento de Vendas */}
+      <SectionTitle>Detalhamento de Vendas</SectionTitle>
 
       {/* Vendas por Produto + Vendas por Pagamento + Vendas por Dia da Semana */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
