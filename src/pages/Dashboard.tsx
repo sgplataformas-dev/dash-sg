@@ -183,7 +183,8 @@ export default function Dashboard() {
     const cpiCampaigns = campaigns.filter(c => c.cpi > 0)
     const cpiSpend = cpiCampaigns.reduce((s, c) => s + c.spend, 0)
     const cpi = cpiSpend > 0 ? cpiCampaigns.reduce((s, c) => s + c.cpi * c.spend, 0) / cpiSpend : 0
-    return { cpm, ctr, cpc, cpv, cpi }
+    const comprasFB = campaigns.reduce((s, c) => s + c.fbPurchases, 0)
+    return { cpm, ctr, cpc, cpv, cpi, comprasFB }
   }, [campaigns, syncedAdSpend])
 
   const rates = useMemo<Rate[]>(() => {
@@ -237,7 +238,7 @@ export default function Dashboard() {
       grossRevenue, prevGrossRevenue, adSpend, prevAdSpend,
       impostoMeta, prevImpostoMeta, profit, prevProfit,
       sales, prevSales, roi, prevRoi, roas, prevRoas, cpa, prevCpa,
-      ticketMedio, prevTicketMedio, comprasFB: 0, prevComprasFB: 0,
+      ticketMedio, prevTicketMedio,
       refundAmount, prevRefundAmount, refundCount, prevRefundCount,
       uniqueBuyers, prevUniqueBuyers,
     }
@@ -340,7 +341,7 @@ export default function Dashboard() {
     { label: 'CPC',            value: formatCurrency(metaAgg.cpc),    curr: metaAgg.cpc,      prev: 0,                  icon: MousePointer2,  inverted: true, noCompare: true },
     { label: 'CPV',            value: formatCurrency(metaAgg.cpv),    curr: metaAgg.cpv,      prev: 0,                  icon: Play,           inverted: true, noCompare: true },
     { label: 'CPI',            value: formatCurrency(metaAgg.cpi),    curr: metaAgg.cpi,      prev: 0,                  icon: Smartphone,     inverted: true, noCompare: true },
-    { label: 'Compras FB',     value: formatNumber(metrics.comprasFB), curr: metrics.comprasFB, prev: metrics.prevComprasFB, icon: ShoppingBag, noCompare: true },
+    { label: 'Compras FB',     value: formatNumber(metaAgg.comprasFB), curr: metaAgg.comprasFB, prev: 0, icon: ShoppingBag, noCompare: true },
   ]
 
   const crossKpis: Kpi[] = [

@@ -103,7 +103,7 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
   if (until) salesQuery = salesQuery.lte('sale_date', until.toISOString())
 
   const [campaignsRes, adSetsRes, adsRes, salesRes] = await Promise.all([
-    supabase.from('campaigns').select('id, campaign_name, status, spend, impressions, clicks, cpm, cpc, ctr, cpv, cpi'),
+    supabase.from('campaigns').select('id, campaign_name, status, spend, impressions, clicks, cpm, cpc, ctr, cpv, cpi, fb_purchases'),
     supabase.from('ad_sets').select('id, campaign_id, adset_name, status, spend, impressions, clicks, cpm, cpc'),
     supabase.from('ads').select('id, ad_set_id, ad_name, status, spend, impressions, clicks, cpm, cpc'),
     salesQuery,
@@ -194,6 +194,7 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
       ctr: Number(c.ctr ?? 0),
       cpv: Number(c.cpv ?? 0),
       cpi: Number(c.cpi ?? 0),
+      fbPurchases: Number(c.fb_purchases ?? 0),
       impressions: Number(c.impressions ?? 0),
       clicks: Number(c.clicks ?? 0),
       adSets,

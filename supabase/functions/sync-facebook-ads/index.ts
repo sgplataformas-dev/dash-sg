@@ -7,7 +7,19 @@ const supabase = createClient(
 
 const FB_API = 'https://graph.facebook.com/v19.0'
 
-async function fetchAllPages(url: string, maxPages = 20): Promise<any[]> {
+const LEAD_ACTION_TYPES = ['lead', 'onsite_conversion.lead_grouped', 'offsite_conversion.fb_pixel_lead', 'initiate_checkout']
+const PURCHASE_ACTION_TYPES = ['purchase', 'offsite_conversion.fb_pixel_purchase', 'omni_purchase']
+
+function countAction(actions: { action_type: string; value: string }[] | undefined, types: string[]): number {
+  if (!actions) return 0
+  for (const type of types) {
+    const found = actions.find(a => a.action_type === type)
+    if (found) return Number(found.value ?? 0)
+  }
+  return 0
+}
+
+async function fetchAllPages(url: string, maxPages = 40): Promise<any[]> {
   const results: any[] = []
   let next: string | null = url
   let pages = 0
@@ -58,12 +70,15 @@ Deno.serve(async (req) => {
       `${FB_API}/act_${accountId}/campaigns?fields=id,name,status,objective,daily_budget,lifetime_budget&limit=200&access_token=${token}`
     )
     const campaignInsights = await fetchAllPages(
-      `${FB_API}/act_${accountId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,cpm,cpc,ctr,reach,cost_per_thruplay&time_range=${timeRange}&limit=500&access_token=${token}`
+      `${FB_API}/act_${accountId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,cpm,cpc,ctr,reach,cost_per_thruplay,actions&time_range=${timeRange}&limit=50&access_token=${token}`
     )
     const campaignInsightsMap = new Map(campaignInsights.map(i => [i.campaign_id, i]))
 
     const campaignRows = campaignEntities.map(c => {
       const ins = campaignInsightsMap.get(c.id) ?? {}
+      const spend = Number(ins.spend ?? 0)
+      const leads = countAction(ins.actions, LEAD_ACTION_TYPES)
+      const purchases = countAction(ins.actions, PURCHASE_ACTION_TYPES)
       return {
         facebook_campaign_id: c.id,
         campaign_name: c.name,
@@ -71,7 +86,7 @@ Deno.serve(async (req) => {
         objective: c.objective ?? null,
         daily_budget: c.daily_budget ? Number(c.daily_budget) / 100 : null,
         lifetime_budget: c.lifetime_budget ? Number(c.lifetime_budget) / 100 : null,
-        spend: Number(ins.spend ?? 0),
+        spend,
         impressions: Number(ins.impressions ?? 0),
         clicks: Number(ins.clicks ?? 0),
         cpm: Number(ins.cpm ?? 0),
@@ -79,7 +94,8 @@ Deno.serve(async (req) => {
         ctr: Number(ins.ctr ?? 0),
         reach: Number(ins.reach ?? 0),
         cpv: Number(ins.cost_per_thruplay?.[0]?.value ?? 0),
-        cpi: 0,
+        cpi: leads > 0 ? spend / leads : 0,
+        fb_purchases: purchases,
         date_start: fmt(since),
         date_stop: fmt(until),
         last_synced_at: new Date().toISOString(),
