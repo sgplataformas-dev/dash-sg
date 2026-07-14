@@ -5,6 +5,13 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
 
+function extractFacebookAdId(utmContent: string | null | undefined): string | null {
+  if (!utmContent) return null
+  const parts = utmContent.split('|')
+  const last = parts[parts.length - 1]?.trim()
+  return last && /^\d{10,}$/.test(last) ? last : null
+}
+
 function mapStatus(paytStatus: string): 'approved' | 'pending' | 'refunded' | 'cancelled' | 'chargeback' {
   if (paytStatus === 'paid') return 'approved'
   if (paytStatus === 'refunded') return 'refunded'
@@ -45,7 +52,7 @@ Deno.serve(async (req) => {
     utm_campaign: body.link?.sources?.utm_campaign ?? null,
     utm_content: body.link?.sources?.utm_content ?? null,
     utm_term: body.link?.sources?.utm_term ?? null,
-    ad_id: body.link?.sources?.src ?? null,
+    ad_id: extractFacebookAdId(body.link?.sources?.utm_content) ?? body.link?.sources?.src ?? null,
     is_organic: !body.link?.sources?.utm_source,
     sale_date: body.transaction?.paid_at ?? body.updated_at ?? new Date().toISOString(),
     raw_webhook_data: body,
