@@ -24,8 +24,8 @@ function CopyButton({ text }: { text: string }) {
     })
   }
   return (
-    <Button variant="ghost" size="icon" onClick={copy} className="h-8 w-8 text-[#909099] hover:text-[#F2F2F0]">
-      {copied ? <Check className="w-4 h-4 text-[#12E28A]" /> : <Copy className="w-4 h-4" />}
+    <Button variant="ghost" size="icon" onClick={copy} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+      {copied ? <Check className="w-4 h-4 text-brand-green" /> : <Copy className="w-4 h-4" />}
     </Button>
   )
 }
@@ -35,10 +35,10 @@ function WebhookCard({ title, platform, url: urlOverride }: { title: string; pla
   const active = getSetting(`webhook_${platform}_active`) === 'true'
 
   return (
-    <Card className="bg-[#15151B] border-[#27272F]">
+    <Card className="">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-[#F2F2F0] text-base">{title}</CardTitle>
+          <CardTitle className="text-foreground text-base">{title}</CardTitle>
           <Badge variant={active ? 'active' : 'gray'}>
             {active ? 'Ativo' : 'Inativo'}
           </Badge>
@@ -46,14 +46,14 @@ function WebhookCard({ title, platform, url: urlOverride }: { title: string; pla
       </CardHeader>
       <CardContent className="space-y-3">
         <div>
-          <Label className="text-[#909099] text-xs mb-1.5 block">URL do Webhook</Label>
-          <div className="flex items-center gap-2 bg-[#1C1C22] border border-[#27272F] rounded-md px-3 py-2">
-            <Link2 className="w-3.5 h-3.5 text-[#909099] flex-shrink-0" />
-            <span className="text-[#909099] text-xs font-mono flex-1 truncate">{url}</span>
+          <Label className="text-muted-foreground text-xs mb-1.5 block">URL do Webhook</Label>
+          <div className="flex items-center gap-2 bg-inner border border-border rounded-md px-3 py-2">
+            <Link2 className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+            <span className="text-muted-foreground text-xs font-mono flex-1 truncate">{url}</span>
             <CopyButton text={url} />
           </div>
         </div>
-        <p className="text-xs text-[#909099]">
+        <p className="text-xs text-muted-foreground">
           Configure este URL como webhook no painel do {title} para receber notificações de vendas.
         </p>
       </CardContent>
@@ -161,17 +161,17 @@ export default function Integrations() {
   return (
     <div className="space-y-5 max-w-2xl">
       {/* Facebook Ads */}
-      <Card className="bg-[#15151B] border-[#27272F]">
+      <Card className="">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-[#F2F2F0] text-base flex items-center gap-2">
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
               <div className="w-7 h-7 rounded-md bg-[#1877F2] flex items-center justify-center text-white text-xs font-bold">f</div>
               Facebook Ads
             </CardTitle>
             <div className="flex items-center gap-2">
               {isConnected
-                ? <><CheckCircle2 className="w-4 h-4 text-[#12E28A]" /><span className="text-[#12E28A] text-sm font-medium">Conectado</span></>
-                : <><XCircle className="w-4 h-4 text-[#FF3B5C]" /><span className="text-[#FF3B5C] text-sm font-medium">Desconectado</span></>
+                ? <><CheckCircle2 className="w-4 h-4 text-brand-green" /><span className="text-brand-green text-sm font-medium">Conectado</span></>
+                : <><XCircle className="w-4 h-4 text-brand-red" /><span className="text-brand-red text-sm font-medium">Desconectado</span></>
               }
             </div>
           </div>
@@ -179,14 +179,14 @@ export default function Integrations() {
         <CardContent className="space-y-4">
           {isConnected ? (
             <div className="space-y-3">
-              <div className="bg-[#1C1C22] rounded-lg p-4 space-y-2">
+              <div className="bg-inner rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#909099]">Conta</span>
-                  <span className="text-[#F2F2F0] font-medium">{connectedName}</span>
+                  <span className="text-muted-foreground">Conta</span>
+                  <span className="text-foreground font-medium">{connectedName}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#909099]">ID da conta</span>
-                  <span className="text-[#F2F2F0] font-mono">{connectedAccountId}</span>
+                  <span className="text-muted-foreground">ID da conta</span>
+                  <span className="text-foreground font-mono">{connectedAccountId}</span>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -194,7 +194,7 @@ export default function Integrations() {
                   {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                   Sincronizar campanhas
                 </Button>
-                <Button variant="destructive" size="sm" onClick={disconnect} className="bg-[#FF3B5C]/20 text-[#FF3B5C] border border-[#FF3B5C]/30 hover:bg-[#FF3B5C]/30">
+                <Button variant="destructive" size="sm" onClick={disconnect} className="bg-brand-red/20 text-brand-red border border-brand-red/30 hover:bg-brand-red/30">
                   Desconectar
                 </Button>
               </div>
@@ -215,8 +215,8 @@ export default function Integrations() {
                     {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Buscar contas'}
                   </Button>
                 </div>
-                <p className="text-xs text-[#909099]">
-                  Gere um token em developers.facebook.com com permissão <code className="bg-[#1C1C22] px-1 rounded">ads_read</code>.
+                <p className="text-xs text-muted-foreground">
+                  Gere um token em developers.facebook.com com permissão <code className="bg-inner px-1 rounded">ads_read</code>.
                 </p>
               </div>
 

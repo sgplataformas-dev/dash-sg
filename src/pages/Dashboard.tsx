@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
-  LineChart, Line, PieChart, Pie, Cell, BarChart, Bar, ComposedChart,
+  AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar, ComposedChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import {
@@ -34,28 +34,49 @@ function paymentLabel(method: string | null): string {
   return 'Outros'
 }
 
-function MetricCard({ label, value, curr, prev, icon: Icon, inverted = false, noCompare = false, subtitle }: {
+function sparklinePath(values: number[]): string {
+  if (values.length < 2) return ''
+  const max = Math.max(...values)
+  const min = Math.min(...values)
+  const range = max - min || 1
+  const step = 100 / (values.length - 1)
+  return values
+    .map((v, i) => `${i === 0 ? 'M' : 'L'}${(i * step).toFixed(1)} ${(18 - ((v - min) / range) * 16).toFixed(1)}`)
+    .join(' ')
+}
+
+function MetricCard({ label, value, curr, prev, icon: Icon, inverted = false, noCompare = false, subtitle, sparkline }: {
   label: string; value: string; curr: number; prev: number
-  icon: React.ElementType; inverted?: boolean; noCompare?: boolean; subtitle?: string
+  icon: React.ElementType; inverted?: boolean; noCompare?: boolean; subtitle?: string; sparkline?: number[]
 }) {
   const pct = prev === 0 ? 0 : ((curr - prev) / Math.abs(prev)) * 100
   const isGood = inverted ? pct < 0 : pct > 0
+  const sparkColor = noCompare ? 'text-muted-foreground' : isGood ? 'text-brand-green' : 'text-brand-red'
   return (
-    <Card className="bg-[#15151B] border-[#27272F]">
-      <CardContent className="p-3">
-        <div className="flex items-start justify-between mb-1.5">
-          <p className="text-[10px] uppercase tracking-wide text-[#909099] font-medium">{label}</p>
-          <Icon className="w-3 h-3 text-[#909099] flex-shrink-0 mt-0.5" />
-        </div>
-        <p className="text-base font-bold text-[#F2F2F0] leading-none">{value}</p>
-        {noCompare ? (
-          <p className="text-[10px] text-[#909099] mt-1.5">período completo</p>
-        ) : (
-          <div className={`flex items-center gap-0.5 mt-1.5 text-[10px] font-medium ${isGood ? 'text-[#12E28A]' : 'text-[#FF3B5C]'}`}>
-            {isGood ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-            <span>{Math.abs(pct).toFixed(1)}%</span>
-            {subtitle && <span className="text-[#909099] font-normal ml-1">{subtitle}</span>}
+    <Card>
+      <CardContent className="p-4 flex flex-col gap-3">
+        <div className="flex items-start justify-between">
+          <div className={`w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0 ${noCompare ? 'bg-inner text-muted-foreground' : isGood ? 'bg-brand-green/10 text-brand-green' : 'bg-brand-red/10 text-brand-red'}`}>
+            <Icon className="w-4 h-4" />
           </div>
+          {noCompare ? (
+            <span className="px-2 py-1 rounded-full bg-inner text-muted-foreground text-[10px] font-mono-tab">período completo</span>
+          ) : (
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold font-mono-tab ${isGood ? 'bg-brand-green/10 text-brand-green' : 'bg-brand-red/10 text-brand-red'}`}>
+              {isGood ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+              {Math.abs(pct).toFixed(1)}%
+            </div>
+          )}
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground font-medium">{label}</p>
+          <p className="text-xl font-mono-tab font-semibold text-foreground mt-1">{value}</p>
+          {subtitle && <p className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</p>}
+        </div>
+        {sparkline && sparkline.length > 1 && (
+          <svg viewBox="0 0 100 20" className={`w-full h-4 ${sparkColor}`} preserveAspectRatio="none">
+            <path d={sparklinePath(sparkline)} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         )}
       </CardContent>
     </Card>
@@ -69,15 +90,15 @@ function ProgressList({ items }: { items: { label: string; count: number; extra?
       {items.map(item => (
         <div key={item.label}>
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-[#F2F2F0]">{item.label}</span>
-            <span className="text-[#909099]">{item.extra ?? item.count}</span>
+            <span className="text-foreground">{item.label}</span>
+            <span className="text-muted-foreground font-mono-tab">{item.extra ?? item.count}</span>
           </div>
-          <div className="h-1.5 bg-[#1C1C22] rounded-full overflow-hidden">
-            <div className="h-full bg-[#12E28A] rounded-full" style={{ width: `${(item.count / max) * 100}%` }} />
+          <div className="h-1.5 bg-inner rounded-full overflow-hidden">
+            <div className="h-full bg-brand-green rounded-full" style={{ width: `${(item.count / max) * 100}%` }} />
           </div>
         </div>
       ))}
-      {items.length === 0 && <p className="text-xs text-[#909099] text-center py-6">Sem dados para o período.</p>}
+      {items.length === 0 && <p className="text-xs text-muted-foreground text-center py-6">Sem dados para o período.</p>}
     </div>
   )
 }
@@ -237,15 +258,18 @@ export default function Dashboard() {
 
   const topCampaigns = [...campaigns].filter(c => c.sales > 0).sort((a, b) => b.revenue - a.revenue).slice(0, 5)
 
-  const kpis: { label: string; value: string; curr: number; prev: number; icon: React.ElementType; inverted?: boolean; noCompare?: boolean; subtitle?: string }[] = [
-    { label: 'Faturamento Bruto', value: formatCurrency(metrics.grossRevenue), curr: metrics.grossRevenue, prev: metrics.prevGrossRevenue, icon: DollarSign },
+  const revenueSparkline = chartData.map(d => d.revenue)
+  const salesSparkline = chartData.map(d => d.sales)
+
+  const kpis: { label: string; value: string; curr: number; prev: number; icon: React.ElementType; inverted?: boolean; noCompare?: boolean; subtitle?: string; sparkline?: number[] }[] = [
+    { label: 'Faturamento Bruto', value: formatCurrency(metrics.grossRevenue), curr: metrics.grossRevenue, prev: metrics.prevGrossRevenue, icon: DollarSign, sparkline: revenueSparkline },
     { label: 'Gasto com Ads',     value: formatCurrency(metrics.adSpend),      curr: metrics.adSpend,      prev: metrics.prevAdSpend,      icon: Target, noCompare: true },
     { label: 'Lucro',             value: formatCurrency(metrics.profit),       curr: metrics.profit,       prev: metrics.prevProfit,       icon: Wallet },
     { label: 'ROI',               value: `${metrics.roi.toFixed(1)}%`,         curr: metrics.roi,          prev: metrics.prevRoi,          icon: TrendingUp, noCompare: true },
     { label: 'ROAS',              value: `${metrics.roas.toFixed(2)}x`,        curr: metrics.roas,         prev: metrics.prevRoas,         icon: BarChart3, noCompare: true },
     { label: 'CPA',               value: formatCurrency(metrics.cpa),          curr: metrics.cpa,          prev: metrics.prevCpa,          icon: Zap, noCompare: true },
     { label: 'Imposto Meta',      value: formatCurrency(metrics.impostoMeta),  curr: metrics.impostoMeta,  prev: metrics.prevImpostoMeta,  icon: Receipt, noCompare: true },
-    { label: 'Vendas',            value: formatNumber(metrics.sales),          curr: metrics.sales,        prev: metrics.prevSales,        icon: ShoppingCart },
+    { label: 'Vendas',            value: formatNumber(metrics.sales),          curr: metrics.sales,        prev: metrics.prevSales,        icon: ShoppingCart, sparkline: salesSparkline },
     { label: 'Reembolsos',        value: formatCurrency(metrics.refundAmount), curr: metrics.refundAmount, prev: metrics.prevRefundAmount, icon: RotateCcw, inverted: true, subtitle: `(${formatNumber(metrics.refundCount)})` },
     { label: 'Compras FB',        value: formatNumber(metrics.comprasFB),      curr: metrics.comprasFB,    prev: metrics.prevComprasFB,    icon: ShoppingBag, noCompare: true },
   ]
@@ -254,7 +278,7 @@ export default function Dashboard() {
     <div className="space-y-5">
       {/* Period selector */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-lg font-semibold text-[#F2F2F0]">Visão Geral</h2>
+        <h2 className="text-lg font-semibold text-foreground">Visão Geral</h2>
         <PeriodFilter
           period={period}
           onPeriodChange={setPeriod}
@@ -283,7 +307,7 @@ export default function Dashboard() {
 
       {/* Produtor / Coprodutor */}
       <div>
-        <h3 className="text-xs uppercase tracking-wide text-[#909099] font-medium mb-2">Produtor / Coprodutor</h3>
+        <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">Produtor / Coprodutor</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <MetricCard label="Lucro × 50% Produtor"    value={formatCurrency(metrics.profit * 0.5)}   curr={metrics.profit * 0.5}   prev={metrics.prevProfit * 0.5}   icon={Wallet} />
           <MetricCard label="Lucro × 50% Coprodutor"  value={formatCurrency(metrics.profit * 0.5)}   curr={metrics.profit * 0.5}   prev={metrics.prevProfit * 0.5}   icon={Wallet} />
@@ -294,9 +318,9 @@ export default function Dashboard() {
 
       {/* CPA x ROAS x Vendas + Funil de Conversão */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card className="lg:col-span-2 bg-[#15151B] border-[#27272F]">
+        <Card className="lg:col-span-2 ">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#F2F2F0] text-base">CPA × ROAS × Vendas</CardTitle>
+            <CardTitle className="text-foreground text-base">CPA × ROAS × Vendas</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -309,8 +333,8 @@ export default function Dashboard() {
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null
                     return (
-                      <div className="bg-[#15151B] border border-[#27272F] rounded-lg p-3 text-xs">
-                        <p className="text-[#909099] mb-1">{label}</p>
+                      <div className="bg-card border border-border rounded-lg p-3 text-xs">
+                        <p className="text-muted-foreground mb-1">{label}</p>
                         {payload.map(p => (
                           <p key={String(p.dataKey)} style={{ color: p.color }}>
                             {p.name}: {p.dataKey === 'sales' ? p.value : formatCurrency(Number(p.value ?? 0))}
@@ -321,7 +345,7 @@ export default function Dashboard() {
                   }}
                 />
                 <Legend iconType="circle" iconSize={8} />
-                <Bar yAxisId="right" dataKey="sales" name="Vendas" fill="#8B6BF2" radius={[3, 3, 0, 0]} />
+                <Bar yAxisId="right" dataKey="sales" name="Vendas" fill="#8B6BF2" radius={[6, 6, 0, 0]} />
                 <Line yAxisId="left" type="monotone" dataKey="cpa" name="CPA" stroke="#FF3B5C" strokeWidth={2} dot={false} />
                 <Line yAxisId="left" type="monotone" dataKey="roas" name="ROAS" stroke="#4FA3FF" strokeWidth={2} dot={false} />
               </ComposedChart>
@@ -329,15 +353,15 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#15151B] border-[#27272F]">
+        <Card className="">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#F2F2F0] text-base">Funil de Conversão</CardTitle>
+            <CardTitle className="text-foreground text-base">Funil de Conversão</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {funnelStages.map(stage => (
               <div key={stage.label} className="flex items-center justify-between text-xs">
-                <span className="text-[#909099]">{stage.label}</span>
-                <span className="text-[#F2F2F0] font-medium">{formatNumber(stage.value)} · {funnelPct(stage.value)}</span>
+                <span className="text-muted-foreground">{stage.label}</span>
+                <span className="text-foreground font-medium font-mono-tab">{formatNumber(stage.value)} · {funnelPct(stage.value)}</span>
               </div>
             ))}
           </CardContent>
@@ -345,16 +369,16 @@ export default function Dashboard() {
       </div>
 
       {/* Funil de Fluxo */}
-      <Card className="bg-[#15151B] border-[#27272F]">
+      <Card className="">
         <CardHeader className="pb-2">
-          <CardTitle className="text-[#F2F2F0] text-base">Funil de Fluxo</CardTitle>
+          <CardTitle className="text-foreground text-base">Funil de Fluxo</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-4 gap-3 text-center">
             {fluxoStages.map(stage => (
-              <div key={stage.label} className="bg-[#1C1C22] rounded-lg py-4">
-                <p className="text-lg font-bold text-[#F2F2F0]">{formatNumber(stage.value)}</p>
-                <p className="text-[10px] text-[#909099] mt-1 uppercase tracking-wide">{stage.label}</p>
+              <div key={stage.label} className="bg-inner rounded-lg py-4">
+                <p className="text-lg font-bold text-foreground font-mono-tab">{formatNumber(stage.value)}</p>
+                <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wide">{stage.label}</p>
               </div>
             ))}
           </div>
@@ -363,22 +387,28 @@ export default function Dashboard() {
 
       {/* Faturamento vs Gasto + Vendas por Origem */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card className="lg:col-span-2 bg-[#15151B] border-[#27272F]">
+        <Card className="lg:col-span-2 ">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#F2F2F0] text-base">Faturamento vs Gasto</CardTitle>
+            <CardTitle className="text-foreground text-base">Faturamento vs Gasto</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272F" />
+              <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#12E28A" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#12E28A" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272F" vertical={false} />
                 <XAxis dataKey="date" stroke="#909099" tick={{ fontSize: 10 }} tickLine={false} />
                 <YAxis stroke="#909099" tick={{ fontSize: 10 }} tickLine={false} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null
                     return (
-                      <div className="bg-[#15151B] border border-[#27272F] rounded-lg p-3 text-xs">
-                        <p className="text-[#909099] mb-1">{label}</p>
+                      <div className="bg-card border border-border rounded-lg p-3 text-xs font-mono-tab">
+                        <p className="text-muted-foreground mb-1 font-sans">{label}</p>
                         {payload.map(p => (
                           <p key={String(p.dataKey)} style={{ color: p.color }}>
                             {p.dataKey === 'revenue' ? 'Faturamento' : 'Gasto'}: {formatCurrency(Number(p.value ?? 0))}
@@ -389,45 +419,51 @@ export default function Dashboard() {
                   }}
                 />
                 <Legend iconType="circle" iconSize={8} formatter={(v) => v === 'revenue' ? 'Faturamento' : 'Gasto'} />
-                <Line type="monotone" dataKey="revenue" stroke="#12E28A" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="spend"   stroke="#FF3B5C" strokeWidth={2} dot={false} />
-              </LineChart>
+                <Area type="monotone" dataKey="revenue" stroke="#12E28A" strokeWidth={2.5} fill="url(#revenueGradient)" dot={false} />
+                <Area type="monotone" dataKey="spend" stroke="#FF3B5C" strokeWidth={2} strokeDasharray="6 4" fill="none" dot={false} />
+              </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card className="bg-[#15151B] border-[#27272F]">
+        <Card className="">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#F2F2F0] text-base">Vendas por Origem</CardTitle>
+            <CardTitle className="text-foreground text-base">Vendas por Origem</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={salesBySource} cx="50%" cy="45%" innerRadius={55} outerRadius={80} dataKey="value" paddingAngle={3}>
-                  {salesBySource.map((_, i) => <Cell key={`cell-${i}`} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                </Pie>
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null
-                    const p = payload[0]
-                    return (
-                      <div className="bg-[#15151B] border border-[#27272F] rounded-lg p-3 text-xs">
-                        <p style={{ color: p.payload.fill }}>{p.name}: <strong>{p.value} vendas</strong></p>
-                      </div>
-                    )
-                  }}
-                />
-                <Legend iconType="circle" iconSize={8} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="relative">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={salesBySource} cx="50%" cy="45%" innerRadius={55} outerRadius={80} dataKey="value" paddingAngle={3}>
+                    {salesBySource.map((_, i) => <Cell key={`cell-${i}`} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null
+                      const p = payload[0]
+                      return (
+                        <div className="bg-card border border-border rounded-lg p-3 text-xs">
+                          <p style={{ color: p.payload.fill }}>{p.name}: <strong className="font-mono-tab">{p.value} vendas</strong></p>
+                        </div>
+                      )
+                    }}
+                  />
+                  <Legend iconType="circle" iconSize={8} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ marginTop: '-22px' }}>
+                <span className="text-xl font-mono-tab font-bold text-foreground">{formatNumber(salesBySource.reduce((s, x) => s + x.value, 0))}</span>
+                <span className="text-[9px] text-muted-foreground uppercase tracking-widest">vendas</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Vendas por Horário */}
-      <Card className="bg-[#15151B] border-[#27272F]">
+      <Card className="">
         <CardHeader className="pb-2">
-          <CardTitle className="text-[#F2F2F0] text-base">Vendas por Horário</CardTitle>
+          <CardTitle className="text-foreground text-base">Vendas por Horário</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={180}>
@@ -439,13 +475,13 @@ export default function Dashboard() {
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null
                   return (
-                    <div className="bg-[#15151B] border border-[#27272F] rounded-lg p-3 text-xs">
-                      <p className="text-[#909099]">{label}: <strong className="text-[#F2F2F0]">{payload[0].value} vendas</strong></p>
+                    <div className="bg-card border border-border rounded-lg p-3 text-xs">
+                      <p className="text-muted-foreground">{label}: <strong className="text-foreground">{payload[0].value} vendas</strong></p>
                     </div>
                   )
                 }}
               />
-              <Bar dataKey="sales" fill="#12E28A" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="sales" fill="#12E28A" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -453,45 +489,51 @@ export default function Dashboard() {
 
       {/* Vendas por Produto + Vendas por Pagamento + Vendas por Dia da Semana */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card className="bg-[#15151B] border-[#27272F]">
+        <Card className="">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#F2F2F0] text-base">Vendas por Produto</CardTitle>
+            <CardTitle className="text-foreground text-base">Vendas por Produto</CardTitle>
           </CardHeader>
           <CardContent>
             <ProgressList items={salesByProduct} />
           </CardContent>
         </Card>
 
-        <Card className="bg-[#15151B] border-[#27272F]">
+        <Card className="">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#F2F2F0] text-base">Vendas por Pagamento</CardTitle>
+            <CardTitle className="text-foreground text-base">Vendas por Pagamento</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie data={salesByPayment} cx="50%" cy="45%" innerRadius={50} outerRadius={75} dataKey="value" paddingAngle={3}>
-                  {salesByPayment.map((_, i) => <Cell key={`cell-${i}`} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                </Pie>
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null
-                    const p = payload[0]
-                    return (
-                      <div className="bg-[#15151B] border border-[#27272F] rounded-lg p-3 text-xs">
-                        <p style={{ color: p.payload.fill }}>{p.name}: <strong>{p.value} vendas</strong></p>
-                      </div>
-                    )
-                  }}
-                />
-                <Legend iconType="circle" iconSize={8} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="relative">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={salesByPayment} cx="50%" cy="45%" innerRadius={50} outerRadius={75} dataKey="value" paddingAngle={3}>
+                    {salesByPayment.map((_, i) => <Cell key={`cell-${i}`} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null
+                      const p = payload[0]
+                      return (
+                        <div className="bg-card border border-border rounded-lg p-3 text-xs">
+                          <p style={{ color: p.payload.fill }}>{p.name}: <strong className="font-mono-tab">{p.value} vendas</strong></p>
+                        </div>
+                      )
+                    }}
+                  />
+                  <Legend iconType="circle" iconSize={8} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ marginTop: '-20px' }}>
+                <span className="text-lg font-mono-tab font-bold text-foreground">{formatNumber(salesByPayment.reduce((s, x) => s + x.value, 0))}</span>
+                <span className="text-[9px] text-muted-foreground uppercase tracking-widest">vendas</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-[#15151B] border-[#27272F]">
+        <Card className="">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#F2F2F0] text-base">Vendas por Dia da Semana</CardTitle>
+            <CardTitle className="text-foreground text-base">Vendas por Dia da Semana</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -503,13 +545,13 @@ export default function Dashboard() {
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null
                     return (
-                      <div className="bg-[#15151B] border border-[#27272F] rounded-lg p-3 text-xs">
-                        <p className="text-[#909099]">{label}: <strong className="text-[#F2F2F0]">{payload[0].value} vendas</strong></p>
+                      <div className="bg-card border border-border rounded-lg p-3 text-xs">
+                        <p className="text-muted-foreground">{label}: <strong className="text-foreground">{payload[0].value} vendas</strong></p>
                       </div>
                     )
                   }}
                 />
-                <Bar dataKey="sales" fill="#FFC24B" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="sales" fill="#FFC24B" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -517,13 +559,13 @@ export default function Dashboard() {
       </div>
 
       {/* Top Campanhas */}
-      <Card className="bg-[#15151B] border-[#27272F]">
+      <Card className="">
         <CardHeader className="pb-2">
-          <CardTitle className="text-[#F2F2F0] text-base">Top Campanhas</CardTitle>
+          <CardTitle className="text-foreground text-base">Top Campanhas</CardTitle>
         </CardHeader>
         <CardContent className={topCampaigns.length === 0 ? '' : 'p-0'}>
           {topCampaigns.length === 0 ? (
-            <p className="text-sm text-[#909099] text-center py-8">Sem dados de campanha para o período.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">Sem dados de campanha para o período.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -545,10 +587,10 @@ export default function Dashboard() {
                         {c.status === 'active' ? 'Ativo' : 'Pausado'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right text-[#FF3B5C]">{formatCurrency(c.spend)}</TableCell>
-                    <TableCell className="text-right text-[#12E28A]">{formatCurrency(c.revenue)}</TableCell>
-                    <TableCell className="text-right text-[#4FA3FF]">{c.roas.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(c.cpa)}</TableCell>
+                    <TableCell className="text-right text-brand-red font-mono-tab">{formatCurrency(c.spend)}</TableCell>
+                    <TableCell className="text-right text-brand-green font-mono-tab">{formatCurrency(c.revenue)}</TableCell>
+                    <TableCell className="text-right text-brand-blue font-mono-tab">{c.roas.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-mono-tab">{formatCurrency(c.cpa)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
