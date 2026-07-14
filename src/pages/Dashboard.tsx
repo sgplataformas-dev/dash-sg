@@ -17,7 +17,7 @@ import { formatCurrency, formatNumber } from '@/lib/utils'
 import { fetchRawSales, fetchCampaignsFull, subscribeToSales, getSetting, type RawSale } from '@/lib/supabase'
 import type { Rate, Campaign } from '@/types'
 
-const PIE_COLORS = ['#74B9FF', '#00B894', '#6C5CE7', '#FDCB6E']
+const PIE_COLORS = ['#4FA3FF', '#12E28A', '#8B6BF2', '#FFC24B']
 const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
 function sourceCategory(s: RawSale): string {
@@ -41,20 +41,20 @@ function MetricCard({ label, value, curr, prev, icon: Icon, inverted = false, no
   const pct = prev === 0 ? 0 : ((curr - prev) / Math.abs(prev)) * 100
   const isGood = inverted ? pct < 0 : pct > 0
   return (
-    <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+    <Card className="bg-[#15151B] border-[#27272F]">
       <CardContent className="p-3">
         <div className="flex items-start justify-between mb-1.5">
-          <p className="text-[10px] uppercase tracking-wide text-[#8892a4] font-medium">{label}</p>
-          <Icon className="w-3 h-3 text-[#8892a4] flex-shrink-0 mt-0.5" />
+          <p className="text-[10px] uppercase tracking-wide text-[#909099] font-medium">{label}</p>
+          <Icon className="w-3 h-3 text-[#909099] flex-shrink-0 mt-0.5" />
         </div>
-        <p className="text-base font-bold text-[#E0E0E0] leading-none">{value}</p>
+        <p className="text-base font-bold text-[#F2F2F0] leading-none">{value}</p>
         {noCompare ? (
-          <p className="text-[10px] text-[#8892a4] mt-1.5">período completo</p>
+          <p className="text-[10px] text-[#909099] mt-1.5">período completo</p>
         ) : (
-          <div className={`flex items-center gap-0.5 mt-1.5 text-[10px] font-medium ${isGood ? 'text-[#00B894]' : 'text-[#E94560]'}`}>
+          <div className={`flex items-center gap-0.5 mt-1.5 text-[10px] font-medium ${isGood ? 'text-[#12E28A]' : 'text-[#FF3B5C]'}`}>
             {isGood ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
             <span>{Math.abs(pct).toFixed(1)}%</span>
-            {subtitle && <span className="text-[#8892a4] font-normal ml-1">{subtitle}</span>}
+            {subtitle && <span className="text-[#909099] font-normal ml-1">{subtitle}</span>}
           </div>
         )}
       </CardContent>
@@ -69,15 +69,15 @@ function ProgressList({ items }: { items: { label: string; count: number; extra?
       {items.map(item => (
         <div key={item.label}>
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-[#E0E0E0]">{item.label}</span>
-            <span className="text-[#8892a4]">{item.extra ?? item.count}</span>
+            <span className="text-[#F2F2F0]">{item.label}</span>
+            <span className="text-[#909099]">{item.extra ?? item.count}</span>
           </div>
-          <div className="h-1.5 bg-[#12122A] rounded-full overflow-hidden">
-            <div className="h-full bg-[#00B894] rounded-full" style={{ width: `${(item.count / max) * 100}%` }} />
+          <div className="h-1.5 bg-[#1C1C22] rounded-full overflow-hidden">
+            <div className="h-full bg-[#12E28A] rounded-full" style={{ width: `${(item.count / max) * 100}%` }} />
           </div>
         </div>
       ))}
-      {items.length === 0 && <p className="text-xs text-[#8892a4] text-center py-6">Sem dados para o período.</p>}
+      {items.length === 0 && <p className="text-xs text-[#909099] text-center py-6">Sem dados para o período.</p>}
     </div>
   )
 }
@@ -254,7 +254,7 @@ export default function Dashboard() {
     <div className="space-y-5">
       {/* Period selector */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-lg font-semibold text-[#E0E0E0]">Visão Geral</h2>
+        <h2 className="text-lg font-semibold text-[#F2F2F0]">Visão Geral</h2>
         <PeriodFilter
           period={period}
           onPeriodChange={setPeriod}
@@ -283,7 +283,7 @@ export default function Dashboard() {
 
       {/* Produtor / Coprodutor */}
       <div>
-        <h3 className="text-xs uppercase tracking-wide text-[#8892a4] font-medium mb-2">Produtor / Coprodutor</h3>
+        <h3 className="text-xs uppercase tracking-wide text-[#909099] font-medium mb-2">Produtor / Coprodutor</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <MetricCard label="Lucro × 50% Produtor"    value={formatCurrency(metrics.profit * 0.5)}   curr={metrics.profit * 0.5}   prev={metrics.prevProfit * 0.5}   icon={Wallet} />
           <MetricCard label="Lucro × 50% Coprodutor"  value={formatCurrency(metrics.profit * 0.5)}   curr={metrics.profit * 0.5}   prev={metrics.prevProfit * 0.5}   icon={Wallet} />
@@ -294,23 +294,23 @@ export default function Dashboard() {
 
       {/* CPA x ROAS x Vendas + Funil de Conversão */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card className="lg:col-span-2 bg-[#1A1A2E] border-[#2d2d4a]">
+        <Card className="lg:col-span-2 bg-[#15151B] border-[#27272F]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#E0E0E0] text-base">CPA × ROAS × Vendas</CardTitle>
+            <CardTitle className="text-[#F2F2F0] text-base">CPA × ROAS × Vendas</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
               <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2d2d4a" />
-                <XAxis dataKey="date" stroke="#8892a4" tick={{ fontSize: 10 }} tickLine={false} />
-                <YAxis yAxisId="left" stroke="#8892a4" tick={{ fontSize: 10 }} tickLine={false} />
-                <YAxis yAxisId="right" orientation="right" stroke="#8892a4" tick={{ fontSize: 10 }} tickLine={false} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272F" />
+                <XAxis dataKey="date" stroke="#909099" tick={{ fontSize: 10 }} tickLine={false} />
+                <YAxis yAxisId="left" stroke="#909099" tick={{ fontSize: 10 }} tickLine={false} />
+                <YAxis yAxisId="right" orientation="right" stroke="#909099" tick={{ fontSize: 10 }} tickLine={false} allowDecimals={false} />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null
                     return (
-                      <div className="bg-[#1A1A2E] border border-[#2d2d4a] rounded-lg p-3 text-xs">
-                        <p className="text-[#8892a4] mb-1">{label}</p>
+                      <div className="bg-[#15151B] border border-[#27272F] rounded-lg p-3 text-xs">
+                        <p className="text-[#909099] mb-1">{label}</p>
                         {payload.map(p => (
                           <p key={String(p.dataKey)} style={{ color: p.color }}>
                             {p.name}: {p.dataKey === 'sales' ? p.value : formatCurrency(Number(p.value ?? 0))}
@@ -321,23 +321,23 @@ export default function Dashboard() {
                   }}
                 />
                 <Legend iconType="circle" iconSize={8} />
-                <Bar yAxisId="right" dataKey="sales" name="Vendas" fill="#6C5CE7" radius={[3, 3, 0, 0]} />
-                <Line yAxisId="left" type="monotone" dataKey="cpa" name="CPA" stroke="#E94560" strokeWidth={2} dot={false} />
-                <Line yAxisId="left" type="monotone" dataKey="roas" name="ROAS" stroke="#74B9FF" strokeWidth={2} dot={false} />
+                <Bar yAxisId="right" dataKey="sales" name="Vendas" fill="#8B6BF2" radius={[3, 3, 0, 0]} />
+                <Line yAxisId="left" type="monotone" dataKey="cpa" name="CPA" stroke="#FF3B5C" strokeWidth={2} dot={false} />
+                <Line yAxisId="left" type="monotone" dataKey="roas" name="ROAS" stroke="#4FA3FF" strokeWidth={2} dot={false} />
               </ComposedChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+        <Card className="bg-[#15151B] border-[#27272F]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#E0E0E0] text-base">Funil de Conversão</CardTitle>
+            <CardTitle className="text-[#F2F2F0] text-base">Funil de Conversão</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {funnelStages.map(stage => (
               <div key={stage.label} className="flex items-center justify-between text-xs">
-                <span className="text-[#8892a4]">{stage.label}</span>
-                <span className="text-[#E0E0E0] font-medium">{formatNumber(stage.value)} · {funnelPct(stage.value)}</span>
+                <span className="text-[#909099]">{stage.label}</span>
+                <span className="text-[#F2F2F0] font-medium">{formatNumber(stage.value)} · {funnelPct(stage.value)}</span>
               </div>
             ))}
           </CardContent>
@@ -345,16 +345,16 @@ export default function Dashboard() {
       </div>
 
       {/* Funil de Fluxo */}
-      <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+      <Card className="bg-[#15151B] border-[#27272F]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-[#E0E0E0] text-base">Funil de Fluxo</CardTitle>
+          <CardTitle className="text-[#F2F2F0] text-base">Funil de Fluxo</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-4 gap-3 text-center">
             {fluxoStages.map(stage => (
-              <div key={stage.label} className="bg-[#12122A] rounded-lg py-4">
-                <p className="text-lg font-bold text-[#E0E0E0]">{formatNumber(stage.value)}</p>
-                <p className="text-[10px] text-[#8892a4] mt-1 uppercase tracking-wide">{stage.label}</p>
+              <div key={stage.label} className="bg-[#1C1C22] rounded-lg py-4">
+                <p className="text-lg font-bold text-[#F2F2F0]">{formatNumber(stage.value)}</p>
+                <p className="text-[10px] text-[#909099] mt-1 uppercase tracking-wide">{stage.label}</p>
               </div>
             ))}
           </div>
@@ -363,22 +363,22 @@ export default function Dashboard() {
 
       {/* Faturamento vs Gasto + Vendas por Origem */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card className="lg:col-span-2 bg-[#1A1A2E] border-[#2d2d4a]">
+        <Card className="lg:col-span-2 bg-[#15151B] border-[#27272F]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#E0E0E0] text-base">Faturamento vs Gasto</CardTitle>
+            <CardTitle className="text-[#F2F2F0] text-base">Faturamento vs Gasto</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2d2d4a" />
-                <XAxis dataKey="date" stroke="#8892a4" tick={{ fontSize: 10 }} tickLine={false} />
-                <YAxis stroke="#8892a4" tick={{ fontSize: 10 }} tickLine={false} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272F" />
+                <XAxis dataKey="date" stroke="#909099" tick={{ fontSize: 10 }} tickLine={false} />
+                <YAxis stroke="#909099" tick={{ fontSize: 10 }} tickLine={false} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null
                     return (
-                      <div className="bg-[#1A1A2E] border border-[#2d2d4a] rounded-lg p-3 text-xs">
-                        <p className="text-[#8892a4] mb-1">{label}</p>
+                      <div className="bg-[#15151B] border border-[#27272F] rounded-lg p-3 text-xs">
+                        <p className="text-[#909099] mb-1">{label}</p>
                         {payload.map(p => (
                           <p key={String(p.dataKey)} style={{ color: p.color }}>
                             {p.dataKey === 'revenue' ? 'Faturamento' : 'Gasto'}: {formatCurrency(Number(p.value ?? 0))}
@@ -389,16 +389,16 @@ export default function Dashboard() {
                   }}
                 />
                 <Legend iconType="circle" iconSize={8} formatter={(v) => v === 'revenue' ? 'Faturamento' : 'Gasto'} />
-                <Line type="monotone" dataKey="revenue" stroke="#00B894" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="spend"   stroke="#E94560" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="revenue" stroke="#12E28A" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="spend"   stroke="#FF3B5C" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+        <Card className="bg-[#15151B] border-[#27272F]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#E0E0E0] text-base">Vendas por Origem</CardTitle>
+            <CardTitle className="text-[#F2F2F0] text-base">Vendas por Origem</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -411,7 +411,7 @@ export default function Dashboard() {
                     if (!active || !payload?.length) return null
                     const p = payload[0]
                     return (
-                      <div className="bg-[#1A1A2E] border border-[#2d2d4a] rounded-lg p-3 text-xs">
+                      <div className="bg-[#15151B] border border-[#27272F] rounded-lg p-3 text-xs">
                         <p style={{ color: p.payload.fill }}>{p.name}: <strong>{p.value} vendas</strong></p>
                       </div>
                     )
@@ -425,27 +425,27 @@ export default function Dashboard() {
       </div>
 
       {/* Vendas por Horário */}
-      <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+      <Card className="bg-[#15151B] border-[#27272F]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-[#E0E0E0] text-base">Vendas por Horário</CardTitle>
+          <CardTitle className="text-[#F2F2F0] text-base">Vendas por Horário</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={salesByHour} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2d2d4a" />
-              <XAxis dataKey="hour" stroke="#8892a4" tick={{ fontSize: 9 }} tickLine={false} interval={1} />
-              <YAxis stroke="#8892a4" tick={{ fontSize: 10 }} tickLine={false} allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272F" />
+              <XAxis dataKey="hour" stroke="#909099" tick={{ fontSize: 9 }} tickLine={false} interval={1} />
+              <YAxis stroke="#909099" tick={{ fontSize: 10 }} tickLine={false} allowDecimals={false} />
               <Tooltip
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null
                   return (
-                    <div className="bg-[#1A1A2E] border border-[#2d2d4a] rounded-lg p-3 text-xs">
-                      <p className="text-[#8892a4]">{label}: <strong className="text-[#E0E0E0]">{payload[0].value} vendas</strong></p>
+                    <div className="bg-[#15151B] border border-[#27272F] rounded-lg p-3 text-xs">
+                      <p className="text-[#909099]">{label}: <strong className="text-[#F2F2F0]">{payload[0].value} vendas</strong></p>
                     </div>
                   )
                 }}
               />
-              <Bar dataKey="sales" fill="#00B894" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="sales" fill="#12E28A" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -453,18 +453,18 @@ export default function Dashboard() {
 
       {/* Vendas por Produto + Vendas por Pagamento + Vendas por Dia da Semana */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+        <Card className="bg-[#15151B] border-[#27272F]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#E0E0E0] text-base">Vendas por Produto</CardTitle>
+            <CardTitle className="text-[#F2F2F0] text-base">Vendas por Produto</CardTitle>
           </CardHeader>
           <CardContent>
             <ProgressList items={salesByProduct} />
           </CardContent>
         </Card>
 
-        <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+        <Card className="bg-[#15151B] border-[#27272F]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#E0E0E0] text-base">Vendas por Pagamento</CardTitle>
+            <CardTitle className="text-[#F2F2F0] text-base">Vendas por Pagamento</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -477,7 +477,7 @@ export default function Dashboard() {
                     if (!active || !payload?.length) return null
                     const p = payload[0]
                     return (
-                      <div className="bg-[#1A1A2E] border border-[#2d2d4a] rounded-lg p-3 text-xs">
+                      <div className="bg-[#15151B] border border-[#27272F] rounded-lg p-3 text-xs">
                         <p style={{ color: p.payload.fill }}>{p.name}: <strong>{p.value} vendas</strong></p>
                       </div>
                     )
@@ -489,27 +489,27 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+        <Card className="bg-[#15151B] border-[#27272F]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#E0E0E0] text-base">Vendas por Dia da Semana</CardTitle>
+            <CardTitle className="text-[#F2F2F0] text-base">Vendas por Dia da Semana</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={salesByWeekday} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2d2d4a" />
-                <XAxis dataKey="day" stroke="#8892a4" tick={{ fontSize: 10 }} tickLine={false} />
-                <YAxis stroke="#8892a4" tick={{ fontSize: 10 }} tickLine={false} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272F" />
+                <XAxis dataKey="day" stroke="#909099" tick={{ fontSize: 10 }} tickLine={false} />
+                <YAxis stroke="#909099" tick={{ fontSize: 10 }} tickLine={false} allowDecimals={false} />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null
                     return (
-                      <div className="bg-[#1A1A2E] border border-[#2d2d4a] rounded-lg p-3 text-xs">
-                        <p className="text-[#8892a4]">{label}: <strong className="text-[#E0E0E0]">{payload[0].value} vendas</strong></p>
+                      <div className="bg-[#15151B] border border-[#27272F] rounded-lg p-3 text-xs">
+                        <p className="text-[#909099]">{label}: <strong className="text-[#F2F2F0]">{payload[0].value} vendas</strong></p>
                       </div>
                     )
                   }}
                 />
-                <Bar dataKey="sales" fill="#FDCB6E" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="sales" fill="#FFC24B" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -517,13 +517,13 @@ export default function Dashboard() {
       </div>
 
       {/* Top Campanhas */}
-      <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+      <Card className="bg-[#15151B] border-[#27272F]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-[#E0E0E0] text-base">Top Campanhas</CardTitle>
+          <CardTitle className="text-[#F2F2F0] text-base">Top Campanhas</CardTitle>
         </CardHeader>
         <CardContent className={topCampaigns.length === 0 ? '' : 'p-0'}>
           {topCampaigns.length === 0 ? (
-            <p className="text-sm text-[#8892a4] text-center py-8">Sem dados de campanha para o período.</p>
+            <p className="text-sm text-[#909099] text-center py-8">Sem dados de campanha para o período.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -545,9 +545,9 @@ export default function Dashboard() {
                         {c.status === 'active' ? 'Ativo' : 'Pausado'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right text-[#E94560]">{formatCurrency(c.spend)}</TableCell>
-                    <TableCell className="text-right text-[#00B894]">{formatCurrency(c.revenue)}</TableCell>
-                    <TableCell className="text-right text-[#74B9FF]">{c.roas.toFixed(2)}</TableCell>
+                    <TableCell className="text-right text-[#FF3B5C]">{formatCurrency(c.spend)}</TableCell>
+                    <TableCell className="text-right text-[#12E28A]">{formatCurrency(c.revenue)}</TableCell>
+                    <TableCell className="text-right text-[#4FA3FF]">{c.roas.toFixed(2)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(c.cpa)}</TableCell>
                   </TableRow>
                 ))}

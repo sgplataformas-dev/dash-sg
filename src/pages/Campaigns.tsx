@@ -83,7 +83,7 @@ export default function Campaigns() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8892a4]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#909099]" />
           <Input
             placeholder="Buscar campanha..."
             value={search}
@@ -112,7 +112,7 @@ export default function Campaigns() {
       </div>
 
       {/* Table */}
-      <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+      <Card className="bg-[#15151B] border-[#27272F]">
         <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
@@ -134,8 +134,8 @@ export default function Campaigns() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {expandedCampaigns.has(campaign.id)
-                          ? <ChevronDown className="w-4 h-4 text-[#74B9FF] flex-shrink-0" />
-                          : <ChevronRight className="w-4 h-4 text-[#8892a4] flex-shrink-0" />}
+                          ? <ChevronDown className="w-4 h-4 text-[#4FA3FF] flex-shrink-0" />
+                          : <ChevronRight className="w-4 h-4 text-[#909099] flex-shrink-0" />}
                         <span className="truncate max-w-[200px]">{campaign.name}</span>
                       </div>
                     </TableCell>
@@ -161,15 +161,15 @@ export default function Campaigns() {
                     <>
                       <TableRow
                         key={adSet.id}
-                        className="cursor-pointer select-none bg-[#12122A]/60 hover:bg-[#12122A]"
+                        className="cursor-pointer select-none bg-[#1C1C22]/60 hover:bg-[#1C1C22]"
                         onClick={e => { e.stopPropagation(); toggleAdSet(adSet.id) }}
                       >
                         <TableCell>
                           <div className="flex items-center gap-2 pl-6">
                             {expandedAdSets.has(adSet.id)
-                              ? <ChevronDown className="w-3.5 h-3.5 text-[#00B894] flex-shrink-0" />
-                              : <ChevronRight className="w-3.5 h-3.5 text-[#8892a4] flex-shrink-0" />}
-                            <span className="text-[#8892a4] text-xs truncate max-w-[190px]">{adSet.name}</span>
+                              ? <ChevronDown className="w-3.5 h-3.5 text-[#12E28A] flex-shrink-0" />
+                              : <ChevronRight className="w-3.5 h-3.5 text-[#909099] flex-shrink-0" />}
+                            <span className="text-[#909099] text-xs truncate max-w-[190px]">{adSet.name}</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -191,10 +191,10 @@ export default function Campaigns() {
 
                       {/* Ad Rows */}
                       {expandedAdSets.has(adSet.id) && adSet.ads.map(ad => (
-                        <TableRow key={ad.id} className="bg-[#0F0F23]/80 hover:bg-[#0F0F23]">
+                        <TableRow key={ad.id} className="bg-[#0A0A0F]/80 hover:bg-[#0A0A0F]">
                           <TableCell>
                             <div className="flex items-center gap-2 pl-12">
-                              <span className="text-[#8892a4]/70 text-[10px] truncate max-w-[175px]">{ad.name}</span>
+                              <span className="text-[#909099]/70 text-[10px] truncate max-w-[175px]">{ad.name}</span>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -221,7 +221,7 @@ export default function Campaigns() {
 
               {paginated.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center py-12 text-[#8892a4]">
+                  <TableCell colSpan={12} className="text-center py-12 text-[#909099]">
                     Nenhuma campanha encontrada.
                   </TableCell>
                 </TableRow>
@@ -233,7 +233,7 @@ export default function Campaigns() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-[#8892a4]">
+        <div className="flex items-center justify-between text-sm text-[#909099]">
           <span>{filtered.length} campanha{filtered.length !== 1 ? 's' : ''}</span>
           <div className="flex items-center gap-2">
             <Button
@@ -244,7 +244,7 @@ export default function Campaigns() {
             >
               Anterior
             </Button>
-            <span className="text-[#E0E0E0]">{page} / {totalPages}</span>
+            <span className="text-[#F2F2F0]">{page} / {totalPages}</span>
             <Button
               variant="outline"
               size="sm"

@@ -38,9 +38,9 @@ function GeneralTab() {
   }
 
   return (
-    <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+    <Card className="bg-[#15151B] border-[#27272F]">
       <CardHeader>
-        <CardTitle className="text-[#E0E0E0] text-base">Configurações Gerais</CardTitle>
+        <CardTitle className="text-[#F2F2F0] text-base">Configurações Gerais</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="space-y-1.5">
@@ -123,20 +123,20 @@ function FacebookTab() {
   }
 
   return (
-    <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+    <Card className="bg-[#15151B] border-[#27272F]">
       <CardHeader>
-        <CardTitle className="text-[#E0E0E0] text-base">Facebook Ads</CardTitle>
+        <CardTitle className="text-[#F2F2F0] text-base">Facebook Ads</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="bg-[#12122A] rounded-lg p-4 space-y-2">
+        <div className="bg-[#1C1C22] rounded-lg p-4 space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-[#8892a4]">Token atual</span>
-            <span className="text-[#E0E0E0] font-mono">{maskedToken}</span>
+            <span className="text-[#909099]">Token atual</span>
+            <span className="text-[#F2F2F0] font-mono">{maskedToken}</span>
           </div>
           {lastSync && (
             <div className="flex justify-between text-sm">
-              <span className="text-[#8892a4]">Última sincronização</span>
-              <span className="text-[#E0E0E0]">{lastSync}</span>
+              <span className="text-[#909099]">Última sincronização</span>
+              <span className="text-[#F2F2F0]">{lastSync}</span>
             </div>
           )}
         </div>
@@ -169,7 +169,7 @@ function FacebookTab() {
         </Button>
 
         {!rawToken && (
-          <p className="text-xs text-[#8892a4]">Configure um token na aba Integrações primeiro.</p>
+          <p className="text-xs text-[#909099]">Configure um token na aba Integrações primeiro.</p>
         )}
       </CardContent>
     </Card>
@@ -239,14 +239,14 @@ function RatesTab() {
 
   return (
     <>
-      <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+      <Card className="bg-[#15151B] border-[#27272F]">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-[#E0E0E0] text-base">Taxas e Descontos</CardTitle>
+              <CardTitle className="text-[#F2F2F0] text-base">Taxas e Descontos</CardTitle>
               {rates.length > 0 && (
-                <p className="text-xs text-[#8892a4] mt-0.5">
-                  Impacto total sobre receita: <span className="text-[#E94560] font-medium">-{totalImpact.toFixed(1)}%</span>
+                <p className="text-xs text-[#909099] mt-0.5">
+                  Impacto total sobre receita: <span className="text-[#FF3B5C] font-medium">-{totalImpact.toFixed(1)}%</span>
                 </p>
               )}
             </div>
@@ -257,7 +257,7 @@ function RatesTab() {
         </CardHeader>
         <CardContent className="p-0">
           {rates.length === 0 ? (
-            <div className="py-12 text-center text-[#8892a4] text-sm">
+            <div className="py-12 text-center text-[#909099] text-sm">
               Nenhuma taxa cadastrada. Clique em "Adicionar" para começar.
             </div>
           ) : (
@@ -281,12 +281,12 @@ function RatesTab() {
                     <TableCell className="text-right font-mono">
                       {rate.type === 'percent' ? `${rate.value}%` : formatCurrency(rate.value)}
                     </TableCell>
-                    <TableCell className="text-[#8892a4] text-sm capitalize">{rate.appliesTo === 'revenue' ? 'Receita' : 'Comissão'}</TableCell>
+                    <TableCell className="text-[#909099] text-sm capitalize">{rate.appliesTo === 'revenue' ? 'Receita' : 'Comissão'}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-[#E94560] hover:text-[#E94560] hover:bg-[#E94560]/10"
+                        className="h-8 w-8 text-[#FF3B5C] hover:text-[#FF3B5C] hover:bg-[#FF3B5C]/10"
                         onClick={() => setDeleteTarget(rate)}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -361,13 +361,13 @@ function RatesTab() {
           <DialogHeader>
             <DialogTitle>Remover taxa</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja remover a taxa <span className="text-[#E0E0E0] font-medium">"{deleteTarget?.name}"</span>? Esta ação não pode ser desfeita.
+              Tem certeza que deseja remover a taxa <span className="text-[#F2F2F0] font-medium">"{deleteTarget?.name}"</span>? Esta ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
             <Button
-              className="bg-[#E94560]/20 text-[#E94560] border border-[#E94560]/30 hover:bg-[#E94560]/30"
+              className="bg-[#FF3B5C]/20 text-[#FF3B5C] border border-[#FF3B5C]/30 hover:bg-[#FF3B5C]/30"
               onClick={deleteRate}
             >
               Remover
@@ -384,7 +384,7 @@ function RatesTab() {
 export default function Settings() {
   return (
     <div className="max-w-2xl space-y-4">
-      <h2 className="text-lg font-semibold text-[#E0E0E0]">Configurações</h2>
+      <h2 className="text-lg font-semibold text-[#F2F2F0]">Configurações</h2>
       <Tabs defaultValue="general">
         <TabsList>
           <TabsTrigger value="general">Geral</TabsTrigger>

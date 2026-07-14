@@ -33,7 +33,7 @@ export function PeriodFilter({
             onChange={e => onCustomSinceChange(e.target.value)}
             className="h-9 w-[150px] text-sm"
           />
-          <span className="text-[#8892a4] text-sm">até</span>
+          <span className="text-[#909099] text-sm">até</span>
           <Input
             type="date"
             value={customUntil}

@@ -105,13 +105,13 @@ export default function Sales() {
       </div>
 
       {/* Summary */}
-      <div className="flex items-center gap-4 text-sm text-[#8892a4]">
-        <span><span className="text-[#E0E0E0] font-medium">{filtered.length}</span> vendas</span>
-        <span>Total aprovado: <span className="text-[#00B894] font-semibold">{formatCurrency(totalRevenue)}</span></span>
+      <div className="flex items-center gap-4 text-sm text-[#909099]">
+        <span><span className="text-[#F2F2F0] font-medium">{filtered.length}</span> vendas</span>
+        <span>Total aprovado: <span className="text-[#12E28A] font-semibold">{formatCurrency(totalRevenue)}</span></span>
       </div>
 
       {/* Table */}
-      <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+      <Card className="bg-[#15151B] border-[#27272F]">
         <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
@@ -130,17 +130,17 @@ export default function Sales() {
             <TableBody>
               {filtered.map(sale => (
                 <TableRow key={sale.id}>
-                  <TableCell className="text-[#8892a4] text-sm whitespace-nowrap">{sale.date}</TableCell>
+                  <TableCell className="text-[#909099] text-sm whitespace-nowrap">{sale.date}</TableCell>
                   <TableCell className="font-medium whitespace-nowrap">{sale.product}</TableCell>
                   <TableCell className="text-right font-mono">
-                    {sale.value > 0 ? formatCurrency(sale.value) : <span className="text-[#8892a4]">—</span>}
+                    {sale.value > 0 ? formatCurrency(sale.value) : <span className="text-[#909099]">—</span>}
                   </TableCell>
                   <TableCell>
                     <Badge variant="info">{sale.checkout}</Badge>
                   </TableCell>
-                  <TableCell className="text-[#8892a4] text-xs max-w-[180px] truncate">{sale.campaign}</TableCell>
-                  <TableCell className="text-[#8892a4] text-xs max-w-[160px] truncate">{sale.adSet}</TableCell>
-                  <TableCell className="text-[#8892a4] text-xs max-w-[160px] truncate">{sale.ad}</TableCell>
+                  <TableCell className="text-[#909099] text-xs max-w-[180px] truncate">{sale.campaign}</TableCell>
+                  <TableCell className="text-[#909099] text-xs max-w-[160px] truncate">{sale.adSet}</TableCell>
+                  <TableCell className="text-[#909099] text-xs max-w-[160px] truncate">{sale.ad}</TableCell>
                   <TableCell>
                     <Badge variant={statusVariant[sale.status]}>{statusLabel[sale.status]}</Badge>
                   </TableCell>
@@ -153,7 +153,7 @@ export default function Sales() {
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12 text-[#8892a4]">
+                  <TableCell colSpan={9} className="text-center py-12 text-[#909099]">
                     Nenhuma venda encontrada.
                   </TableCell>
                 </TableRow>

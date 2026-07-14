@@ -9,6 +9,9 @@ export default {
       screens: { "2xl": "1400px" },
     },
     extend: {
+      fontFamily: {
+        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -23,16 +26,16 @@ export default {
         popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
         card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
         brand: {
-          green:   "#00B894",
-          red:     "#E94560",
-          blue:    "#74B9FF",
-          yellow:  "#FDCB6E",
-          purple:  "#6C5CE7",
-          bg:      "#0F0F23",
-          card:    "#1A1A2E",
-          sidebar: "#16213E",
-          inner:   "#12122A",
-          border:  "#2d2d4a",
+          green:   "#12E28A",
+          red:     "#FF3B5C",
+          blue:    "#4FA3FF",
+          yellow:  "#FFC24B",
+          purple:  "#8B6BF2",
+          bg:      "#0A0A0F",
+          card:    "#15151B",
+          sidebar: "#0D0D12",
+          inner:   "#1C1C22",
+          border:  "#27272F",
         },
       },
       borderRadius: {

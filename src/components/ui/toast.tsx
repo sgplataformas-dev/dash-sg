@@ -26,7 +26,7 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default:     "border-[#1E2D4A] bg-[#111827] text-white",
+        default:     "border-[#27272F] bg-[#15151B] text-white",
         destructive: "destructive group border-red-500 bg-red-500/20 text-white",
         success:     "border-emerald-500 bg-emerald-500/20 text-white",
       },
@@ -58,7 +58,7 @@ const ToastAction = React.forwardRef<
   <ToastPrimitive.Action
     ref={ref}
     className={cn(
-      "inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[#1E2D4A] bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-[#1E2D4A] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+      "inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[#27272F] bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-[#27272F] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
       className
     )}
     {...props}
@@ -73,7 +73,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitive.Close
     ref={ref}
     className={cn(
-      "absolute right-2 top-2 rounded-md p-1 text-[#64748B] opacity-0 transition-opacity hover:text-white focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100",
+      "absolute right-2 top-2 rounded-md p-1 text-[#909099] opacity-0 transition-opacity hover:text-white focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100",
       className
     )}
     toast-close=""
