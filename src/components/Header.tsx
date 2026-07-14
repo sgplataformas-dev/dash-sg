@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Menu, RefreshCw, Sun, Moon } from 'lucide-react'
+import { Menu, RefreshCw, Sun, Moon, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getStoredTheme, applyTheme, type Theme } from '@/lib/theme'
+import { supabase } from '@/lib/supabase'
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -63,6 +64,15 @@ export function Header({ onMenuClick, onRefresh, refreshing }: HeaderProps) {
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
           <span className="hidden sm:inline text-xs">Atualizar</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => supabase.auth.signOut()}
+          className="text-muted-foreground hover:text-brand-red h-9 w-9 rounded-full"
+          aria-label="Sair"
+        >
+          <LogOut className="w-4 h-4" />
         </Button>
       </div>
     </header>
