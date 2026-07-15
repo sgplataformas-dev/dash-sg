@@ -187,6 +187,38 @@ Deno.serve(async (req) => {
       if (error) throw new Error(`ads: ${error.message}`)
     }
 
+    // ── Campaign-level daily insights (para filtro real por período na tabela de Campanhas) ──
+    // Buscar por-dia para as ~338 campanhas inteiras (10k+ linhas) estoura o limite de
+    // recursos da Edge Function / paginacao da Meta. Restringe as campanhas com gasto
+    // real no periodo (as pausadas ha mais tempo ficam com 0 nos dias filtrados, o que
+    // e o comportamento correto ja que nao gastaram nada nesses dias).
+    const spendingCampaignIds = campaignRows.filter(c => c.spend > 0).map(c => c.facebook_campaign_id)
+    let campaignDailyRows: { campaign_id: string; date: string; spend: number; impressions: number; clicks: number; cpm: number; cpc: number; synced_at: string }[] = []
+    if (spendingCampaignIds.length > 0) {
+      const filtering = encodeURIComponent(JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: spendingCampaignIds }]))
+      const campaignDailyInsights = await fetchAllPages(
+        `${FB_API}/act_${accountId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,cpm,cpc&time_range=${timeRange}&time_increment=1&filtering=${filtering}&limit=100&access_token=${token}`,
+        60
+      )
+      campaignDailyRows = campaignDailyInsights
+        .filter(ins => campaignIdMap.has(ins.campaign_id))
+        .map(ins => ({
+          campaign_id: campaignIdMap.get(ins.campaign_id)!,
+          date: ins.date_start,
+          spend: Number(ins.spend ?? 0),
+          impressions: Number(ins.impressions ?? 0),
+          clicks: Number(ins.clicks ?? 0),
+          cpm: Number(ins.cpm ?? 0),
+          cpc: Number(ins.cpc ?? 0),
+          synced_at: new Date().toISOString(),
+        }))
+    }
+
+    if (campaignDailyRows.length > 0) {
+      const { error } = await supabase.from('campaign_daily_insights').upsert(campaignDailyRows, { onConflict: 'campaign_id,date' })
+      if (error) throw new Error(`campaign_daily_insights: ${error.message}`)
+    }
+
     // ── Account-level daily insights (para filtro real por período) ──
     const dailyInsights = await fetchAllPages(
       `${FB_API}/act_${accountId}/insights?fields=spend,impressions,clicks,cpm,cpc,ctr,reach,cost_per_thruplay,actions&time_range=${timeRange}&time_increment=1&limit=50&access_token=${token}`
@@ -228,6 +260,8 @@ Deno.serve(async (req) => {
       campaigns: campaignRows.length,
       adSets: adSetRows.length,
       ads: adRows.length,
+      campaignDailyInsights: campaignDailyRows.length,
+      spendingCampaigns: spendingCampaignIds.length,
       dailyInsights: dailyRows.length,
       totalSpend,
       period: { since: fmt(since), until: fmt(until) },
