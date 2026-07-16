@@ -116,7 +116,7 @@ export const EMPTY_META_AGG: MetaAdsAgg = {
 }
 
 export async function fetchAccountDailyInsights(since: Date, until: Date): Promise<MetaAdsAgg> {
-  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+  const fmt = (d: Date) => format(d, 'yyyy-MM-dd')
   const { data, error } = await supabase
     .from('fb_account_daily_insights')
     .select('date, spend, impressions, clicks, cpv, cpi, fb_purchases, link_clicks, page_views, view_content, initiate_checkout')
@@ -148,7 +148,7 @@ export async function fetchAccountDailyInsights(since: Date, until: Date): Promi
 }
 
 export async function fetchDailySpend(since: Date, until: Date): Promise<Map<string, number>> {
-  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+  const fmt = (d: Date) => format(d, 'yyyy-MM-dd')
   const { data, error } = await supabase
     .from('fb_account_daily_insights')
     .select('date, spend')
@@ -171,8 +171,8 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
   let campaignDailyQuery = supabase
     .from('campaign_daily_insights')
     .select('campaign_id, spend, impressions, clicks, link_clicks')
-  if (since) campaignDailyQuery = campaignDailyQuery.gte('date', since.toISOString().slice(0, 10))
-  if (until) campaignDailyQuery = campaignDailyQuery.lte('date', until.toISOString().slice(0, 10))
+  if (since) campaignDailyQuery = campaignDailyQuery.gte('date', format(since, 'yyyy-MM-dd'))
+  if (until) campaignDailyQuery = campaignDailyQuery.lte('date', format(until, 'yyyy-MM-dd'))
 
   const [campaignsRes, adSetsRes, adsRes, salesRes, campaignDailyRes] = await Promise.all([
     supabase.from('campaigns').select('id, campaign_name, status, spend, impressions, clicks, cpm, cpc, ctr, cpv, cpi, fb_purchases'),
