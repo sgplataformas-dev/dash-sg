@@ -134,7 +134,7 @@ export async function fetchAccountDailyInsights(since: Date, until: Date): Promi
   const initiateCheckout = data.reduce((s, r) => s + Number(r.initiate_checkout ?? 0), 0)
   const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0
   const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0
-  const cpc = clicks > 0 ? spend / clicks : 0
+  const cpc = linkClicks > 0 ? spend / linkClicks : 0
 
   const cpvRows = data.filter(r => Number(r.cpv ?? 0) > 0)
   const cpvSpend = cpvRows.reduce((s, r) => s + Number(r.spend ?? 0), 0)
@@ -170,7 +170,7 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
 
   let campaignDailyQuery = supabase
     .from('campaign_daily_insights')
-    .select('campaign_id, spend, impressions, clicks')
+    .select('campaign_id, spend, impressions, clicks, link_clicks')
   if (since) campaignDailyQuery = campaignDailyQuery.gte('date', since.toISOString().slice(0, 10))
   if (until) campaignDailyQuery = campaignDailyQuery.lte('date', until.toISOString().slice(0, 10))
 
@@ -183,13 +183,14 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
   ])
   if (campaignsRes.error || !campaignsRes.data) return []
 
-  type Spend = { spend: number; impressions: number; clicks: number }
+  type Spend = { spend: number; impressions: number; clicks: number; linkClicks: number }
   const campaignSpendMap = new Map<string, Spend>()
   ;(campaignDailyRes.data ?? []).forEach((r: any) => {
-    const curr = campaignSpendMap.get(r.campaign_id) ?? { spend: 0, impressions: 0, clicks: 0 }
+    const curr = campaignSpendMap.get(r.campaign_id) ?? { spend: 0, impressions: 0, clicks: 0, linkClicks: 0 }
     curr.spend += Number(r.spend ?? 0)
     curr.impressions += Number(r.impressions ?? 0)
     curr.clicks += Number(r.clicks ?? 0)
+    curr.linkClicks += Number(r.link_clicks ?? 0)
     campaignSpendMap.set(r.campaign_id, curr)
   })
 
@@ -261,7 +262,7 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
     })
 
     const perf: Perf = campaignPerf.get(c.id) ?? { revenue: 0, sales: 0 }
-    const daily: Spend = campaignSpendMap.get(c.id) ?? { spend: 0, impressions: 0, clicks: 0 }
+    const daily: Spend = campaignSpendMap.get(c.id) ?? { spend: 0, impressions: 0, clicks: 0, linkClicks: 0 }
     const spend = daily.spend
     return {
       id: c.id,
@@ -274,7 +275,7 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
       roas: spend > 0 ? perf.revenue / spend : 0,
       cpa: perf.sales > 0 ? spend / perf.sales : 0,
       cpm: daily.impressions > 0 ? (spend / daily.impressions) * 1000 : 0,
-      cpc: daily.clicks > 0 ? spend / daily.clicks : 0,
+      cpc: daily.linkClicks > 0 ? spend / daily.linkClicks : 0,
       ctr: Number(c.ctr ?? 0),
       cpv: Number(c.cpv ?? 0),
       cpi: Number(c.cpi ?? 0),
