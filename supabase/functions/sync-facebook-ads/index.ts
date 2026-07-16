@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
 
   const settingsMap = Object.fromEntries((settingsRows ?? []).map(r => [r.key, r.value]))
   const token = settingsMap.facebook_token
-  const accountId = settingsMap.facebook_ad_account_id
+  const accountId = settingsMap.facebook_ad_account_id?.replace(/^act_/, '')
 
   if (!token || !accountId) {
     return new Response(JSON.stringify({ error: 'Facebook não conectado. Salve o token e a conta em Integrações.' }), {
