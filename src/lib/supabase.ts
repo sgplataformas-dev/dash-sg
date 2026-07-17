@@ -281,7 +281,7 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
       cpi: Number(c.cpi ?? 0),
       fbPurchases: Number(c.fb_purchases ?? 0),
       impressions: daily.impressions,
-      clicks: daily.clicks,
+      clicks: daily.linkClicks,
       adSets,
     }
   })
