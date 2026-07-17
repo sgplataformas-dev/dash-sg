@@ -56,6 +56,8 @@ export interface Campaign {
   cpv: number
   cpi: number
   fbPurchases: number
+  pageViews: number
+  initiateCheckout: number
   impressions: number
   clicks: number
   adSets: AdSet[]

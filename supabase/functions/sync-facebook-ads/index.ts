@@ -193,11 +193,11 @@ Deno.serve(async (req) => {
     // real no periodo (as pausadas ha mais tempo ficam com 0 nos dias filtrados, o que
     // e o comportamento correto ja que nao gastaram nada nesses dias).
     const spendingCampaignIds = campaignRows.filter(c => c.spend > 0).map(c => c.facebook_campaign_id)
-    let campaignDailyRows: { campaign_id: string; date: string; spend: number; impressions: number; clicks: number; cpm: number; cpc: number; link_clicks: number; synced_at: string }[] = []
+    let campaignDailyRows: { campaign_id: string; date: string; spend: number; impressions: number; clicks: number; cpm: number; cpc: number; link_clicks: number; ctr: number; page_views: number; cpv: number; initiate_checkout: number; synced_at: string }[] = []
     if (spendingCampaignIds.length > 0) {
       const filtering = encodeURIComponent(JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: spendingCampaignIds }]))
       const campaignDailyInsights = await fetchAllPages(
-        `${FB_API}/act_${accountId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,cpm,cpc,inline_link_clicks&time_range=${timeRange}&time_increment=1&filtering=${filtering}&limit=100&access_token=${token}`,
+        `${FB_API}/act_${accountId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,cpm,cpc,inline_link_clicks,unique_ctr,cost_per_thruplay,actions&time_range=${timeRange}&time_increment=1&filtering=${filtering}&limit=100&access_token=${token}`,
         60
       )
       campaignDailyRows = campaignDailyInsights
@@ -211,6 +211,10 @@ Deno.serve(async (req) => {
           cpm: Number(ins.cpm ?? 0),
           cpc: Number(ins.cpc ?? 0),
           link_clicks: Number(ins.inline_link_clicks ?? 0),
+          ctr: Number(ins.unique_ctr ?? 0),
+          page_views: countAction(ins.actions, PAGE_VIEW_TYPES),
+          cpv: Number(ins.cost_per_thruplay?.[0]?.value ?? 0),
+          initiate_checkout: countAction(ins.actions, INITIATE_CHECKOUT_TYPES),
           synced_at: new Date().toISOString(),
         }))
     }

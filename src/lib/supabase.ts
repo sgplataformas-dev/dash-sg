@@ -170,7 +170,7 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
 
   let campaignDailyQuery = supabase
     .from('campaign_daily_insights')
-    .select('campaign_id, spend, impressions, clicks, link_clicks')
+    .select('campaign_id, spend, impressions, clicks, link_clicks, ctr, page_views, cpv, initiate_checkout')
   if (since) campaignDailyQuery = campaignDailyQuery.gte('date', format(since, 'yyyy-MM-dd'))
   if (until) campaignDailyQuery = campaignDailyQuery.lte('date', format(until, 'yyyy-MM-dd'))
 
@@ -183,14 +183,26 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
   ])
   if (campaignsRes.error || !campaignsRes.data) return []
 
-  type Spend = { spend: number; impressions: number; clicks: number; linkClicks: number }
+  type Spend = {
+    spend: number; impressions: number; clicks: number; linkClicks: number
+    pageViews: number; initiateCheckout: number
+    ctrWeighted: number; cpvWeighted: number; ctrSpend: number; cpvSpend: number
+  }
   const campaignSpendMap = new Map<string, Spend>()
   ;(campaignDailyRes.data ?? []).forEach((r: any) => {
-    const curr = campaignSpendMap.get(r.campaign_id) ?? { spend: 0, impressions: 0, clicks: 0, linkClicks: 0 }
-    curr.spend += Number(r.spend ?? 0)
+    const curr = campaignSpendMap.get(r.campaign_id) ?? {
+      spend: 0, impressions: 0, clicks: 0, linkClicks: 0, pageViews: 0, initiateCheckout: 0,
+      ctrWeighted: 0, cpvWeighted: 0, ctrSpend: 0, cpvSpend: 0,
+    }
+    const rowSpend = Number(r.spend ?? 0)
+    curr.spend += rowSpend
     curr.impressions += Number(r.impressions ?? 0)
     curr.clicks += Number(r.clicks ?? 0)
     curr.linkClicks += Number(r.link_clicks ?? 0)
+    curr.pageViews += Number(r.page_views ?? 0)
+    curr.initiateCheckout += Number(r.initiate_checkout ?? 0)
+    if (Number(r.ctr ?? 0) > 0) { curr.ctrWeighted += Number(r.ctr) * rowSpend; curr.ctrSpend += rowSpend }
+    if (Number(r.cpv ?? 0) > 0) { curr.cpvWeighted += Number(r.cpv) * rowSpend; curr.cpvSpend += rowSpend }
     campaignSpendMap.set(r.campaign_id, curr)
   })
 
@@ -262,7 +274,10 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
     })
 
     const perf: Perf = campaignPerf.get(c.id) ?? { revenue: 0, sales: 0 }
-    const daily: Spend = campaignSpendMap.get(c.id) ?? { spend: 0, impressions: 0, clicks: 0, linkClicks: 0 }
+    const daily: Spend = campaignSpendMap.get(c.id) ?? {
+      spend: 0, impressions: 0, clicks: 0, linkClicks: 0, pageViews: 0, initiateCheckout: 0,
+      ctrWeighted: 0, cpvWeighted: 0, ctrSpend: 0, cpvSpend: 0,
+    }
     const spend = daily.spend
     return {
       id: c.id,
@@ -276,10 +291,12 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
       cpa: perf.sales > 0 ? spend / perf.sales : 0,
       cpm: daily.impressions > 0 ? (spend / daily.impressions) * 1000 : 0,
       cpc: daily.linkClicks > 0 ? spend / daily.linkClicks : 0,
-      ctr: Number(c.ctr ?? 0),
-      cpv: Number(c.cpv ?? 0),
+      ctr: daily.ctrSpend > 0 ? daily.ctrWeighted / daily.ctrSpend : 0,
+      cpv: daily.cpvSpend > 0 ? daily.cpvWeighted / daily.cpvSpend : 0,
       cpi: Number(c.cpi ?? 0),
       fbPurchases: Number(c.fb_purchases ?? 0),
+      pageViews: daily.pageViews,
+      initiateCheckout: daily.initiateCheckout,
       impressions: daily.impressions,
       clicks: daily.linkClicks,
       adSets,

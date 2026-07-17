@@ -112,8 +112,14 @@ export default function Campaigns() {
       <TableHead className="text-right">CPC</TableHead>
       <TableHead className="text-right">Impressões</TableHead>
       <TableHead className="text-right">Cliques</TableHead>
+      <TableHead className="text-right">CTR</TableHead>
+      <TableHead className="text-right">Views Página</TableHead>
+      <TableHead className="text-right">CPV</TableHead>
+      <TableHead className="text-right">Fin. Compra</TableHead>
     </>
   )
+
+  const DashCell = () => <TableCell className="text-right text-muted-foreground text-sm">—</TableCell>
 
   return (
     <div className="space-y-4">
@@ -248,6 +254,10 @@ export default function Campaigns() {
                     <MetricCell value={campaign.cpc}         formatter={v => `R$${v.toFixed(2)}`} />
                     <MetricCell value={campaign.impressions} formatter={formatNumber} />
                     <MetricCell value={campaign.clicks}      formatter={formatNumber} />
+                    <MetricCell value={campaign.ctr}         formatter={v => `${v.toFixed(2)}%`} />
+                    <MetricCell value={campaign.pageViews}   formatter={formatNumber} />
+                    <MetricCell value={campaign.cpv}         formatter={formatCurrency} />
+                    <MetricCell value={campaign.initiateCheckout} formatter={formatNumber} />
                   </TableRow>
 
                   {/* AdSet Rows */}
@@ -281,6 +291,7 @@ export default function Campaigns() {
                         <MetricCell value={adSet.cpc}         formatter={v => `R$${v.toFixed(2)}`} />
                         <MetricCell value={adSet.impressions} formatter={formatNumber} />
                         <MetricCell value={adSet.clicks}      formatter={formatNumber} />
+                        <DashCell /><DashCell /><DashCell /><DashCell />
                       </TableRow>
 
                       {/* Ad Rows */}
@@ -306,6 +317,7 @@ export default function Campaigns() {
                           <MetricCell value={ad.cpc}         formatter={v => `R$${v.toFixed(2)}`} />
                           <MetricCell value={ad.impressions} formatter={formatNumber} />
                           <MetricCell value={ad.clicks}      formatter={formatNumber} />
+                          <DashCell /><DashCell /><DashCell /><DashCell />
                         </TableRow>
                       ))}
                     </>
@@ -315,7 +327,7 @@ export default function Campaigns() {
 
               {paginated.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={16} className="text-center py-12 text-muted-foreground">
                     Nenhuma campanha encontrada.
                   </TableCell>
                 </TableRow>
