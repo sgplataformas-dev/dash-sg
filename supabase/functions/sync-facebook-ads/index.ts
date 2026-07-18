@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
     if (spendingCampaignIds.length > 0) {
       const filtering = encodeURIComponent(JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: spendingCampaignIds }]))
       const campaignDailyInsights = await fetchAllPages(
-        `${FB_API}/act_${accountId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,cpm,cpc,inline_link_clicks,unique_ctr,actions&time_range=${timeRange}&time_increment=1&filtering=${filtering}&limit=100&access_token=${token}`,
+        `${FB_API}/act_${accountId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,cpm,cpc,inline_link_clicks,unique_link_clicks_ctr,actions&time_range=${timeRange}&time_increment=1&filtering=${filtering}&limit=100&access_token=${token}`,
         60
       )
       campaignDailyRows = campaignDailyInsights
@@ -215,7 +215,7 @@ Deno.serve(async (req) => {
             cpm: Number(ins.cpm ?? 0),
             cpc: Number(ins.cpc ?? 0),
             link_clicks: Number(ins.inline_link_clicks ?? 0),
-            ctr: Number(ins.unique_ctr ?? 0),
+            ctr: Number(ins.unique_link_clicks_ctr ?? 0),
             page_views: pageViews,
             cpv: pageViews > 0 ? rowSpend / pageViews : 0,
             initiate_checkout: countAction(ins.actions, INITIATE_CHECKOUT_TYPES),
