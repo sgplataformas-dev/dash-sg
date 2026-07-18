@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
       `${FB_API}/act_${accountId}/campaigns?fields=id,name,status,objective,daily_budget,lifetime_budget&limit=200&access_token=${token}`
     )
     const campaignInsights = await fetchAllPages(
-      `${FB_API}/act_${accountId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,cpm,cpc,ctr,reach,cost_per_thruplay,actions&time_range=${timeRange}&limit=50&access_token=${token}`
+      `${FB_API}/act_${accountId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,cpm,cpc,ctr,reach,actions&time_range=${timeRange}&limit=50&access_token=${token}`
     )
     const campaignInsightsMap = new Map(campaignInsights.map(i => [i.campaign_id, i]))
 
@@ -83,6 +83,7 @@ Deno.serve(async (req) => {
       const spend = Number(ins.spend ?? 0)
       const leads = countAction(ins.actions, LEAD_ACTION_TYPES)
       const purchases = countAction(ins.actions, PURCHASE_ACTION_TYPES)
+      const pageViews = countAction(ins.actions, PAGE_VIEW_TYPES)
       return {
         facebook_campaign_id: c.id,
         campaign_name: c.name,
@@ -97,7 +98,7 @@ Deno.serve(async (req) => {
         cpc: Number(ins.cpc ?? 0),
         ctr: Number(ins.ctr ?? 0),
         reach: Number(ins.reach ?? 0),
-        cpv: Number(ins.cost_per_thruplay?.[0]?.value ?? 0),
+        cpv: pageViews > 0 ? spend / pageViews : 0,
         cpi: leads > 0 ? spend / leads : 0,
         fb_purchases: purchases,
         date_start: fmt(since),
@@ -197,26 +198,30 @@ Deno.serve(async (req) => {
     if (spendingCampaignIds.length > 0) {
       const filtering = encodeURIComponent(JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: spendingCampaignIds }]))
       const campaignDailyInsights = await fetchAllPages(
-        `${FB_API}/act_${accountId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,cpm,cpc,inline_link_clicks,unique_ctr,cost_per_thruplay,actions&time_range=${timeRange}&time_increment=1&filtering=${filtering}&limit=100&access_token=${token}`,
+        `${FB_API}/act_${accountId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,cpm,cpc,inline_link_clicks,unique_ctr,actions&time_range=${timeRange}&time_increment=1&filtering=${filtering}&limit=100&access_token=${token}`,
         60
       )
       campaignDailyRows = campaignDailyInsights
         .filter(ins => campaignIdMap.has(ins.campaign_id))
-        .map(ins => ({
-          campaign_id: campaignIdMap.get(ins.campaign_id)!,
-          date: ins.date_start,
-          spend: Number(ins.spend ?? 0),
-          impressions: Number(ins.impressions ?? 0),
-          clicks: Number(ins.clicks ?? 0),
-          cpm: Number(ins.cpm ?? 0),
-          cpc: Number(ins.cpc ?? 0),
-          link_clicks: Number(ins.inline_link_clicks ?? 0),
-          ctr: Number(ins.unique_ctr ?? 0),
-          page_views: countAction(ins.actions, PAGE_VIEW_TYPES),
-          cpv: Number(ins.cost_per_thruplay?.[0]?.value ?? 0),
-          initiate_checkout: countAction(ins.actions, INITIATE_CHECKOUT_TYPES),
-          synced_at: new Date().toISOString(),
-        }))
+        .map(ins => {
+          const rowSpend = Number(ins.spend ?? 0)
+          const pageViews = countAction(ins.actions, PAGE_VIEW_TYPES)
+          return {
+            campaign_id: campaignIdMap.get(ins.campaign_id)!,
+            date: ins.date_start,
+            spend: rowSpend,
+            impressions: Number(ins.impressions ?? 0),
+            clicks: Number(ins.clicks ?? 0),
+            cpm: Number(ins.cpm ?? 0),
+            cpc: Number(ins.cpc ?? 0),
+            link_clicks: Number(ins.inline_link_clicks ?? 0),
+            ctr: Number(ins.unique_ctr ?? 0),
+            page_views: pageViews,
+            cpv: pageViews > 0 ? rowSpend / pageViews : 0,
+            initiate_checkout: countAction(ins.actions, INITIATE_CHECKOUT_TYPES),
+            synced_at: new Date().toISOString(),
+          }
+        })
     }
 
     if (campaignDailyRows.length > 0) {
@@ -226,13 +231,14 @@ Deno.serve(async (req) => {
 
     // ── Account-level daily insights (para filtro real por período) ──
     const dailyInsights = await fetchAllPages(
-      `${FB_API}/act_${accountId}/insights?fields=spend,impressions,clicks,cpm,cpc,ctr,reach,cost_per_thruplay,actions&time_range=${timeRange}&time_increment=1&limit=50&access_token=${token}`
+      `${FB_API}/act_${accountId}/insights?fields=spend,impressions,clicks,cpm,cpc,ctr,reach,actions&time_range=${timeRange}&time_increment=1&limit=50&access_token=${token}`
     )
 
     const dailyRows = dailyInsights.map(ins => {
       const spend = Number(ins.spend ?? 0)
       const leads = countAction(ins.actions, LEAD_ACTION_TYPES)
       const purchases = countAction(ins.actions, PURCHASE_ACTION_TYPES)
+      const pageViews = countAction(ins.actions, PAGE_VIEW_TYPES)
       return {
         date: ins.date_start,
         spend,
@@ -242,11 +248,11 @@ Deno.serve(async (req) => {
         cpc: Number(ins.cpc ?? 0),
         ctr: Number(ins.ctr ?? 0),
         reach: Number(ins.reach ?? 0),
-        cpv: Number(ins.cost_per_thruplay?.[0]?.value ?? 0),
+        cpv: pageViews > 0 ? spend / pageViews : 0,
         cpi: leads > 0 ? spend / leads : 0,
         fb_purchases: purchases,
         link_clicks: countAction(ins.actions, LINK_CLICK_TYPES),
-        page_views: countAction(ins.actions, PAGE_VIEW_TYPES),
+        page_views: pageViews,
         view_content: countAction(ins.actions, VIEW_CONTENT_TYPES),
         initiate_checkout: countAction(ins.actions, INITIATE_CHECKOUT_TYPES),
         synced_at: new Date().toISOString(),
