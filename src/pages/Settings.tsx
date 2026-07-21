@@ -38,9 +38,9 @@ function GeneralTab() {
   }
 
   return (
-    <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+    <Card className="">
       <CardHeader>
-        <CardTitle className="text-[#E0E0E0] text-base">Configurações Gerais</CardTitle>
+        <CardTitle className="text-foreground text-base">Configurações Gerais</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="space-y-1.5">
@@ -123,20 +123,20 @@ function FacebookTab() {
   }
 
   return (
-    <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+    <Card className="">
       <CardHeader>
-        <CardTitle className="text-[#E0E0E0] text-base">Facebook Ads</CardTitle>
+        <CardTitle className="text-foreground text-base">Facebook Ads</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="bg-[#12122A] rounded-lg p-4 space-y-2">
+        <div className="bg-inner rounded-lg p-4 space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-[#8892a4]">Token atual</span>
-            <span className="text-[#E0E0E0] font-mono">{maskedToken}</span>
+            <span className="text-muted-foreground">Token atual</span>
+            <span className="text-foreground font-mono">{maskedToken}</span>
           </div>
           {lastSync && (
             <div className="flex justify-between text-sm">
-              <span className="text-[#8892a4]">Última sincronização</span>
-              <span className="text-[#E0E0E0]">{lastSync}</span>
+              <span className="text-muted-foreground">Última sincronização</span>
+              <span className="text-foreground">{lastSync}</span>
             </div>
           )}
         </div>
@@ -169,7 +169,7 @@ function FacebookTab() {
         </Button>
 
         {!rawToken && (
-          <p className="text-xs text-[#8892a4]">Configure um token na aba Integrações primeiro.</p>
+          <p className="text-xs text-muted-foreground">Configure um token na aba Integrações primeiro.</p>
         )}
       </CardContent>
     </Card>
@@ -239,14 +239,14 @@ function RatesTab() {
 
   return (
     <>
-      <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+      <Card className="">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-[#E0E0E0] text-base">Taxas e Descontos</CardTitle>
+              <CardTitle className="text-foreground text-base">Taxas e Descontos</CardTitle>
               {rates.length > 0 && (
-                <p className="text-xs text-[#8892a4] mt-0.5">
-                  Impacto total sobre receita: <span className="text-[#E94560] font-medium">-{totalImpact.toFixed(1)}%</span>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Impacto total sobre receita: <span className="text-brand-red font-medium">-{totalImpact.toFixed(1)}%</span>
                 </p>
               )}
             </div>
@@ -257,7 +257,7 @@ function RatesTab() {
         </CardHeader>
         <CardContent className="p-0">
           {rates.length === 0 ? (
-            <div className="py-12 text-center text-[#8892a4] text-sm">
+            <div className="py-12 text-center text-muted-foreground text-sm">
               Nenhuma taxa cadastrada. Clique em "Adicionar" para começar.
             </div>
           ) : (
@@ -281,12 +281,12 @@ function RatesTab() {
                     <TableCell className="text-right font-mono">
                       {rate.type === 'percent' ? `${rate.value}%` : formatCurrency(rate.value)}
                     </TableCell>
-                    <TableCell className="text-[#8892a4] text-sm capitalize">{rate.appliesTo === 'revenue' ? 'Receita' : 'Comissão'}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm capitalize">{rate.appliesTo === 'revenue' ? 'Receita' : 'Comissão'}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-[#E94560] hover:text-[#E94560] hover:bg-[#E94560]/10"
+                        className="h-8 w-8 text-brand-red hover:text-brand-red hover:bg-brand-red/10"
                         onClick={() => setDeleteTarget(rate)}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -310,7 +310,7 @@ function RatesTab() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>Nome da taxa</Label>
-              <Input placeholder="Ex: Comissão Hotmart" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+              <Input placeholder="Ex: Comissão Payt" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -361,13 +361,13 @@ function RatesTab() {
           <DialogHeader>
             <DialogTitle>Remover taxa</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja remover a taxa <span className="text-[#E0E0E0] font-medium">"{deleteTarget?.name}"</span>? Esta ação não pode ser desfeita.
+              Tem certeza que deseja remover a taxa <span className="text-foreground font-medium">"{deleteTarget?.name}"</span>? Esta ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
             <Button
-              className="bg-[#E94560]/20 text-[#E94560] border border-[#E94560]/30 hover:bg-[#E94560]/30"
+              className="bg-brand-red/20 text-brand-red border border-brand-red/30 hover:bg-brand-red/30"
               onClick={deleteRate}
             >
               Remover
@@ -384,7 +384,7 @@ function RatesTab() {
 export default function Settings() {
   return (
     <div className="max-w-2xl space-y-4">
-      <h2 className="text-lg font-semibold text-[#E0E0E0]">Configurações</h2>
+      <h2 className="text-lg font-semibold text-foreground">Configurações</h2>
       <Tabs defaultValue="general">
         <TabsList>
           <TabsTrigger value="general">Geral</TabsTrigger>

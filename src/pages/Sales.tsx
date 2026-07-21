@@ -1,12 +1,15 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatCurrency } from '@/lib/utils'
-import { mockSales } from '@/data/mockData'
-import type { CheckoutType, SaleStatus, SaleType } from '@/types'
+import { fetchSales, subscribeToSales } from '@/lib/supabase'
+import { PeriodFilter } from '@/components/PeriodFilter'
+import { resolvePeriodRange, type PeriodOption } from '@/lib/period'
+import { subDays, format as formatDateFns } from 'date-fns'
+import type { CheckoutType, Sale, SaleStatus, SaleType } from '@/types'
 
 const statusVariant: Record<SaleStatus, 'success' | 'warning' | 'error'> = {
   aprovada:    'success',
@@ -21,13 +24,24 @@ const statusLabel: Record<SaleStatus, string> = {
 }
 
 export default function Sales() {
+  const [sales, setSales] = useState<Sale[]>([])
   const [search, setSearch] = useState('')
   const [checkout, setCheckout] = useState<CheckoutType | 'all'>('all')
   const [type, setType] = useState<SaleType | 'all'>('all')
   const [status, setStatus] = useState<SaleStatus | 'all'>('all')
+  const [period, setPeriod] = useState<PeriodOption>('30d')
+  const [customSince, setCustomSince] = useState(formatDateFns(subDays(new Date(), 6), 'yyyy-MM-dd'))
+  const [customUntil, setCustomUntil] = useState(formatDateFns(new Date(), 'yyyy-MM-dd'))
+
+  const { since, until } = useMemo(() => resolvePeriodRange(period, customSince, customUntil), [period, customSince, customUntil])
+
+  useEffect(() => {
+    fetchSales(since, until).then(setSales)
+    return subscribeToSales(() => { fetchSales(since, until).then(setSales) })
+  }, [since, until])
 
   const filtered = useMemo(() => {
-    return mockSales.filter(s => {
+    return sales.filter(s => {
       if (checkout !== 'all' && s.checkout !== checkout) return false
       if (type !== 'all' && s.type !== type) return false
       if (status !== 'all' && s.status !== status) return false
@@ -35,7 +49,7 @@ export default function Sales() {
           !s.campaign.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
-  }, [search, checkout, type, status])
+  }, [sales, search, checkout, type, status])
 
   const totalRevenue = filtered.filter(s => s.status === 'aprovada').reduce((sum, s) => sum + s.value, 0)
 
@@ -56,9 +70,7 @@ export default function Sales() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="Hotmart">Hotmart</SelectItem>
-            <SelectItem value="Kiwify">Kiwify</SelectItem>
-            <SelectItem value="Kirvano">Kirvano</SelectItem>
+            <SelectItem value="Payt">Payt</SelectItem>
           </SelectContent>
         </Select>
         <Select value={type} onValueChange={v => setType(v as SaleType | 'all')}>
@@ -82,16 +94,24 @@ export default function Sales() {
             <SelectItem value="reembolsada">Reembolsada</SelectItem>
           </SelectContent>
         </Select>
+        <PeriodFilter
+          period={period}
+          onPeriodChange={setPeriod}
+          customSince={customSince}
+          customUntil={customUntil}
+          onCustomSinceChange={setCustomSince}
+          onCustomUntilChange={setCustomUntil}
+        />
       </div>
 
       {/* Summary */}
-      <div className="flex items-center gap-4 text-sm text-[#8892a4]">
-        <span><span className="text-[#E0E0E0] font-medium">{filtered.length}</span> vendas</span>
-        <span>Total aprovado: <span className="text-[#00B894] font-semibold">{formatCurrency(totalRevenue)}</span></span>
+      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <span><span className="text-foreground font-medium">{filtered.length}</span> vendas</span>
+        <span>Total aprovado: <span className="text-brand-green font-semibold">{formatCurrency(totalRevenue)}</span></span>
       </div>
 
       {/* Table */}
-      <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+      <Card className="">
         <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
@@ -110,17 +130,17 @@ export default function Sales() {
             <TableBody>
               {filtered.map(sale => (
                 <TableRow key={sale.id}>
-                  <TableCell className="text-[#8892a4] text-sm whitespace-nowrap">{sale.date}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm whitespace-nowrap">{sale.date}</TableCell>
                   <TableCell className="font-medium whitespace-nowrap">{sale.product}</TableCell>
                   <TableCell className="text-right font-mono">
-                    {sale.value > 0 ? formatCurrency(sale.value) : <span className="text-[#8892a4]">—</span>}
+                    {sale.value > 0 ? formatCurrency(sale.value) : <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell>
                     <Badge variant="info">{sale.checkout}</Badge>
                   </TableCell>
-                  <TableCell className="text-[#8892a4] text-xs max-w-[180px] truncate">{sale.campaign}</TableCell>
-                  <TableCell className="text-[#8892a4] text-xs max-w-[160px] truncate">{sale.adSet}</TableCell>
-                  <TableCell className="text-[#8892a4] text-xs max-w-[160px] truncate">{sale.ad}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs max-w-[180px] truncate">{sale.campaign}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs max-w-[160px] truncate">{sale.adSet}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs max-w-[160px] truncate">{sale.ad}</TableCell>
                   <TableCell>
                     <Badge variant={statusVariant[sale.status]}>{statusLabel[sale.status]}</Badge>
                   </TableCell>
@@ -133,7 +153,7 @@ export default function Sales() {
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12 text-[#8892a4]">
+                  <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
                     Nenhuma venda encontrada.
                   </TableCell>
                 </TableRow>

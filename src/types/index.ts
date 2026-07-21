@@ -3,7 +3,7 @@ export type Period = 'today' | '7d' | '30d'
 export type CampaignStatus = 'active' | 'paused'
 export type SaleStatus = 'aprovada' | 'pendente' | 'reembolsada'
 export type SaleType = 'paga' | 'organica'
-export type CheckoutType = 'Hotmart' | 'Kiwify' | 'Kirvano'
+export type CheckoutType = 'Payt'
 export type RateType = 'percent' | 'fixed'
 export type RateAppliesTo = 'revenue' | 'commission'
 
@@ -52,6 +52,12 @@ export interface Campaign {
   cpa: number
   cpm: number
   cpc: number
+  ctr: number
+  cpv: number
+  cpi: number
+  fbPurchases: number
+  pageViews: number
+  initiateCheckout: number
   impressions: number
   clicks: number
   adSets: AdSet[]
@@ -116,4 +122,13 @@ export interface FacebookAccount {
   id: string
   name: string
   account_id: string
+}
+
+export interface ActionLogEntry {
+  id: string
+  entryDate: string
+  campaignName: string | null
+  actionTaken: string
+  observedResult: string | null
+  createdAt: string
 }

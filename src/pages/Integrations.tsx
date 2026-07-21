@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CheckCircle2, XCircle, Copy, Check, Loader2, Link2 } from 'lucide-react'
+import { CheckCircle2, XCircle, Copy, Check, Loader2, Link2, RefreshCw } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,9 +9,11 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { getSetting, saveSetting, deleteSetting } from '@/lib/supabase'
 import { toast } from '@/hooks/use-toast'
+import { formatCurrency } from '@/lib/utils'
 import type { FacebookAccount } from '@/types'
 
 const BASE_URL = typeof window !== 'undefined' ? window.location.origin : 'https://seu-dominio.vercel.app'
+const SYNC_FN_URL = 'https://jayuivvpbhsfjpetfspa.supabase.co/functions/v1/sync-facebook-ads'
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -22,21 +24,21 @@ function CopyButton({ text }: { text: string }) {
     })
   }
   return (
-    <Button variant="ghost" size="icon" onClick={copy} className="h-8 w-8 text-[#8892a4] hover:text-[#E0E0E0]">
-      {copied ? <Check className="w-4 h-4 text-[#00B894]" /> : <Copy className="w-4 h-4" />}
+    <Button variant="ghost" size="icon" onClick={copy} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+      {copied ? <Check className="w-4 h-4 text-brand-green" /> : <Copy className="w-4 h-4" />}
     </Button>
   )
 }
 
-function WebhookCard({ title, platform }: { title: string; platform: string }) {
-  const url = `${BASE_URL}/webhook/${platform}`
+function WebhookCard({ title, platform, url: urlOverride }: { title: string; platform: string; url?: string }) {
+  const url = urlOverride ?? `${BASE_URL}/webhook/${platform}`
   const active = getSetting(`webhook_${platform}_active`) === 'true'
 
   return (
-    <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+    <Card className="">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-[#E0E0E0] text-base">{title}</CardTitle>
+          <CardTitle className="text-foreground text-base">{title}</CardTitle>
           <Badge variant={active ? 'active' : 'gray'}>
             {active ? 'Ativo' : 'Inativo'}
           </Badge>
@@ -44,14 +46,14 @@ function WebhookCard({ title, platform }: { title: string; platform: string }) {
       </CardHeader>
       <CardContent className="space-y-3">
         <div>
-          <Label className="text-[#8892a4] text-xs mb-1.5 block">URL do Webhook</Label>
-          <div className="flex items-center gap-2 bg-[#12122A] border border-[#2d2d4a] rounded-md px-3 py-2">
-            <Link2 className="w-3.5 h-3.5 text-[#8892a4] flex-shrink-0" />
-            <span className="text-[#8892a4] text-xs font-mono flex-1 truncate">{url}</span>
+          <Label className="text-muted-foreground text-xs mb-1.5 block">URL do Webhook</Label>
+          <div className="flex items-center gap-2 bg-inner border border-border rounded-md px-3 py-2">
+            <Link2 className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+            <span className="text-muted-foreground text-xs font-mono flex-1 truncate">{url}</span>
             <CopyButton text={url} />
           </div>
         </div>
-        <p className="text-xs text-[#8892a4]">
+        <p className="text-xs text-muted-foreground">
           Configure este URL como webhook no painel do {title} para receber notificações de vendas.
         </p>
       </CardContent>
@@ -67,6 +69,7 @@ export default function Integrations() {
   const [isConnected, setIsConnected] = useState(false)
   const [connectedName, setConnectedName] = useState('')
   const [connectedAccountId, setConnectedAccountId] = useState('')
+  const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
     const savedToken = getSetting('facebook_token')
@@ -135,6 +138,24 @@ export default function Integrations() {
     }
   }
 
+  const syncCampaigns = async () => {
+    setSyncing(true)
+    try {
+      const res = await fetch(SYNC_FN_URL, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error ?? 'Erro ao sincronizar.')
+      toast({
+        title: 'Sincronizado!',
+        description: `${data.campaigns} campanhas, ${data.adSets} conjuntos, ${data.ads} anúncios. Gasto (30d): ${formatCurrency(data.totalSpend)}`,
+      })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido'
+      toast({ title: 'Erro ao sincronizar', description: msg, variant: 'destructive' })
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   const disconnect = () => {
     deleteSetting('facebook_token')
     deleteSetting('facebook_ad_account_id')
@@ -151,17 +172,17 @@ export default function Integrations() {
   return (
     <div className="space-y-5 max-w-2xl">
       {/* Facebook Ads */}
-      <Card className="bg-[#1A1A2E] border-[#2d2d4a]">
+      <Card className="">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-[#E0E0E0] text-base flex items-center gap-2">
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
               <div className="w-7 h-7 rounded-md bg-[#1877F2] flex items-center justify-center text-white text-xs font-bold">f</div>
               Facebook Ads
             </CardTitle>
             <div className="flex items-center gap-2">
               {isConnected
-                ? <><CheckCircle2 className="w-4 h-4 text-[#00B894]" /><span className="text-[#00B894] text-sm font-medium">Conectado</span></>
-                : <><XCircle className="w-4 h-4 text-[#E94560]" /><span className="text-[#E94560] text-sm font-medium">Desconectado</span></>
+                ? <><CheckCircle2 className="w-4 h-4 text-brand-green" /><span className="text-brand-green text-sm font-medium">Conectado</span></>
+                : <><XCircle className="w-4 h-4 text-brand-red" /><span className="text-brand-red text-sm font-medium">Desconectado</span></>
               }
             </div>
           </div>
@@ -169,19 +190,25 @@ export default function Integrations() {
         <CardContent className="space-y-4">
           {isConnected ? (
             <div className="space-y-3">
-              <div className="bg-[#12122A] rounded-lg p-4 space-y-2">
+              <div className="bg-inner rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#8892a4]">Conta</span>
-                  <span className="text-[#E0E0E0] font-medium">{connectedName}</span>
+                  <span className="text-muted-foreground">Conta</span>
+                  <span className="text-foreground font-medium">{connectedName}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#8892a4]">ID da conta</span>
-                  <span className="text-[#E0E0E0] font-mono">{connectedAccountId}</span>
+                  <span className="text-muted-foreground">ID da conta</span>
+                  <span className="text-foreground font-mono">{connectedAccountId}</span>
                 </div>
               </div>
-              <Button variant="destructive" size="sm" onClick={disconnect} className="bg-[#E94560]/20 text-[#E94560] border border-[#E94560]/30 hover:bg-[#E94560]/30">
-                Desconectar
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={syncCampaigns} disabled={syncing} className="gap-1.5">
+                  {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  Sincronizar campanhas
+                </Button>
+                <Button variant="destructive" size="sm" onClick={disconnect} className="bg-brand-red/20 text-brand-red border border-brand-red/30 hover:bg-brand-red/30">
+                  Desconectar
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -199,8 +226,8 @@ export default function Integrations() {
                     {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Buscar contas'}
                   </Button>
                 </div>
-                <p className="text-xs text-[#8892a4]">
-                  Gere um token em developers.facebook.com com permissão <code className="bg-[#12122A] px-1 rounded">ads_read</code>.
+                <p className="text-xs text-muted-foreground">
+                  Gere um token em developers.facebook.com com permissão <code className="bg-inner px-1 rounded">ads_read</code>.
                 </p>
               </div>
 
@@ -235,9 +262,11 @@ export default function Integrations() {
       </Card>
 
       {/* Webhook Cards */}
-      <WebhookCard title="Hotmart"  platform="hotmart"  />
-      <WebhookCard title="Kiwify"   platform="kiwify"   />
-      <WebhookCard title="Kirvano"  platform="kirvano"  />
+      <WebhookCard
+        title="Payt"
+        platform="payt"
+        url="https://jayuivvpbhsfjpetfspa.supabase.co/functions/v1/webhook-payt"
+      />
     </div>
   )
 }
