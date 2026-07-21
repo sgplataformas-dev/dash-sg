@@ -86,13 +86,24 @@ export default function Integrations() {
     }
     setConnecting(true)
     try {
-      const res = await fetch(
-        `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,account_id&access_token=${token.trim()}`
-      )
-      const data = await res.json() as { data?: FacebookAccount[]; error?: { message: string } }
-      if (data.error) throw new Error(data.error.message)
-      setAccounts(data.data ?? [])
-      if ((data.data ?? []).length === 0) {
+      const allAccounts: FacebookAccount[] = []
+      let url: string | null =
+        `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,account_id&limit=200&access_token=${token.trim()}`
+
+      while (url) {
+        const res = await fetch(url)
+        const data = await res.json() as {
+          data?: FacebookAccount[]
+          error?: { message: string }
+          paging?: { next?: string }
+        }
+        if (data.error) throw new Error(data.error.message)
+        allAccounts.push(...(data.data ?? []))
+        url = data.paging?.next ?? null
+      }
+
+      setAccounts(allAccounts)
+      if (allAccounts.length === 0) {
         toast({ title: 'Aviso', description: 'Nenhuma conta de anúncio encontrada para este token.' })
       }
     } catch (err) {
