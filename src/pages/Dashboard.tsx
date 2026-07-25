@@ -154,7 +154,7 @@ export default function Dashboard() {
   const taxPercent = rates.reduce((sum, r) => (r.appliesTo === 'revenue' && r.type === 'percent') ? sum + r.value : sum, 0)
 
   const approved = useMemo(() => sales.filter(s => s.status === 'approved'), [sales])
-  const refunded = useMemo(() => sales.filter(s => s.status === 'refunded' || s.status === 'chargeback'), [sales])
+  const refunded = useMemo(() => sales.filter(s => s.status === 'refunded' || s.status === 'chargeback' || s.status === 'cancelled'), [sales])
 
   const splitByPeriod = (list: RawSale[]) => ({
     curr: list.filter(s => { const d = new Date(s.date); return d >= since && d <= until }),
