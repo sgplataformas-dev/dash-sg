@@ -195,10 +195,12 @@ export async function fetchCampaignsFull(since?: Date, until?: Date): Promise<Ca
   if (since) campaignDailyQuery = campaignDailyQuery.gte('date', format(since, 'yyyy-MM-dd'))
   if (until) campaignDailyQuery = campaignDailyQuery.lte('date', format(until, 'yyyy-MM-dd'))
 
+  const accountId = getSetting('facebook_ad_account_id') ?? ''
+
   const [campaignsRes, adSetsRes, adsRes, salesRes, campaignDailyRes] = await Promise.all([
-    supabase.from('campaigns').select('id, campaign_name, status, spend, impressions, clicks, cpm, cpc, ctr, cpv, cpi, fb_purchases'),
-    supabase.from('ad_sets').select('id, campaign_id, adset_name, status, spend, impressions, clicks, cpm, cpc'),
-    supabase.from('ads').select('id, ad_set_id, ad_name, status, spend, impressions, clicks, cpm, cpc'),
+    supabase.from('campaigns').select('id, campaign_name, status, spend, impressions, clicks, cpm, cpc, ctr, cpv, cpi, fb_purchases').eq('account_id', accountId),
+    supabase.from('ad_sets').select('id, campaign_id, adset_name, status, spend, impressions, clicks, cpm, cpc').eq('account_id', accountId),
+    supabase.from('ads').select('id, ad_set_id, ad_name, status, spend, impressions, clicks, cpm, cpc').eq('account_id', accountId),
     salesQuery,
     campaignDailyQuery,
   ])
