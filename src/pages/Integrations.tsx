@@ -13,25 +13,6 @@ import { formatCurrency } from '@/lib/utils'
 import type { FacebookAccount } from '@/types'
 
 const BASE_URL = typeof window !== 'undefined' ? window.location.origin : 'https://seu-dominio.vercel.app'
-const FB = 'https://graph.facebook.com/v19.0'
-const INSIGHT_FIELDS = 'spend,impressions,clicks,cpm,cpc,ctr,actions,action_values,cost_per_action_type'
-
-async function fbFetchAll(url: string): Promise<any[]> {
-  const results: any[] = []
-  let next: string | null = url
-  while (next) {
-    const res = await fetch(next)
-    const data = await res.json()
-    if (data.error) throw new Error(data.error.message)
-    results.push(...(data.data ?? []))
-    next = data.paging?.next ?? null
-  }
-  return results
-}
-
-function parseAction(actions: any[], type: string): number {
-  return Number(actions?.find((a: any) => a.action_type === type)?.value ?? 0)
-}
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -157,70 +138,14 @@ export default function Integrations() {
   }
 
   const syncCampaigns = async () => {
-    const token = getSetting('facebook_token')
-    const accountId = getSetting('facebook_ad_account_id')
-    if (!token || !accountId) {
-      toast({ title: 'Atenção', description: 'Token ou conta não configurados.', variant: 'destructive' })
-      return
-    }
     setSyncing(true)
     try {
-      const until = new Date().toISOString().split('T')[0]
-      const sinceDate = new Date()
-      sinceDate.setDate(sinceDate.getDate() - 30)
-      const since = sinceDate.toISOString().split('T')[0]
-      const tr = encodeURIComponent(JSON.stringify({ since, until }))
-
-      // Campanhas
-      const campaigns = await fbFetchAll(
-        `${FB}/${accountId}/campaigns?fields=id,name,status,effective_status,insights.time_range(${tr}){${INSIGHT_FIELDS}}&limit=200&access_token=${token}`,
-      )
-      const campaignRows = campaigns.map((c: any) => {
-        const ins = c.insights?.data?.[0] ?? {}
-        return {
-          id: c.id, campaign_name: c.name, status: c.effective_status ?? c.status,
-          spend: Number(ins.spend ?? 0), impressions: Number(ins.impressions ?? 0),
-          clicks: Number(ins.clicks ?? 0), cpm: Number(ins.cpm ?? 0),
-          cpc: Number(ins.cpc ?? 0), ctr: Number(ins.ctr ?? 0),
-          cpv: 0, cpi: 0, fb_purchases: parseAction(ins.actions ?? [], 'purchase'),
-        }
-      })
-      if (campaignRows.length > 0) await supabase.from('campaigns').upsert(campaignRows, { onConflict: 'id' })
-
-      // Conjuntos e anúncios
-      const adSetRows: any[] = []
-      const adRows: any[] = []
-      for (const c of campaigns) {
-        const adSets = await fbFetchAll(
-          `${FB}/${c.id}/adsets?fields=id,name,status,effective_status,insights.time_range(${tr}){${INSIGHT_FIELDS}}&limit=200&access_token=${token}`,
-        )
-        for (const s of adSets) {
-          const ins = s.insights?.data?.[0] ?? {}
-          adSetRows.push({
-            id: s.id, campaign_id: c.id, adset_name: s.name, status: s.effective_status ?? s.status,
-            spend: Number(ins.spend ?? 0), impressions: Number(ins.impressions ?? 0),
-            clicks: Number(ins.clicks ?? 0), cpm: Number(ins.cpm ?? 0), cpc: Number(ins.cpc ?? 0),
-          })
-          const ads = await fbFetchAll(
-            `${FB}/${s.id}/ads?fields=id,name,status,effective_status,insights.time_range(${tr}){${INSIGHT_FIELDS}}&limit=200&access_token=${token}`,
-          )
-          for (const a of ads) {
-            const ai = a.insights?.data?.[0] ?? {}
-            adRows.push({
-              id: a.id, ad_set_id: s.id, ad_name: a.name, status: a.effective_status ?? a.status,
-              spend: Number(ai.spend ?? 0), impressions: Number(ai.impressions ?? 0),
-              clicks: Number(ai.clicks ?? 0), cpm: Number(ai.cpm ?? 0), cpc: Number(ai.cpc ?? 0),
-            })
-          }
-        }
-      }
-      if (adSetRows.length > 0) await supabase.from('ad_sets').upsert(adSetRows, { onConflict: 'id' })
-      if (adRows.length > 0) await supabase.from('ads').upsert(adRows, { onConflict: 'id' })
-
-      const totalSpend = campaignRows.reduce((s: number, c: any) => s + c.spend, 0)
+      const { data, error } = await supabase.functions.invoke('sync-facebook-ads', { method: 'POST' })
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
       toast({
         title: 'Sincronizado!',
-        description: `${campaignRows.length} campanhas · ${adSetRows.length} conjuntos · ${adRows.length} anúncios · Gasto (30d): ${formatCurrency(totalSpend)}`,
+        description: `${data.campaigns} campanhas · ${data.adSets} conjuntos · ${data.ads} anúncios · Gasto (30d): ${formatCurrency(data.totalSpend)}`,
       })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erro desconhecido'
