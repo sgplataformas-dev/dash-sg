@@ -18,6 +18,7 @@ import { formatCurrency, formatNumber } from '@/lib/utils'
 import {
   fetchRawSales, fetchCampaignsFull, subscribeToSales, getSetting, type RawSale,
   fetchAccountDailyInsights, type MetaAdsAgg, EMPTY_META_AGG, fetchDailySpend,
+  fetchRefunds, type RawRefund,
 } from '@/lib/supabase'
 import type { Rate, Campaign } from '@/types'
 
@@ -120,6 +121,8 @@ export default function Dashboard() {
   const [metaDaily, setMetaDaily] = useState<MetaAdsAgg>(EMPTY_META_AGG)
   const [prevMetaDaily, setPrevMetaDaily] = useState<MetaAdsAgg>(EMPTY_META_AGG)
   const [dailySpend, setDailySpend] = useState<Map<string, number>>(new Map())
+  const [refunds, setRefunds] = useState<RawRefund[]>([])
+  const [prevRefunds, setPrevRefunds] = useState<RawRefund[]>([])
 
   const { since, until } = useMemo(() => resolvePeriodRange(period, customSince, customUntil), [period, customSince, customUntil])
   const { prevSince, prevUntil } = useMemo(() => {
@@ -142,6 +145,8 @@ export default function Dashboard() {
     fetchAccountDailyInsights(since, until).then(setMetaDaily)
     fetchAccountDailyInsights(prevSince, prevUntil).then(setPrevMetaDaily)
     fetchDailySpend(since, until).then(setDailySpend)
+    fetchRefunds(since, until).then(setRefunds)
+    fetchRefunds(prevSince, prevUntil).then(setPrevRefunds)
   }, [since, until, prevSince, prevUntil])
 
   const syncedAdSpend = metaDaily.spend
@@ -154,7 +159,6 @@ export default function Dashboard() {
   const taxPercent = rates.reduce((sum, r) => (r.appliesTo === 'revenue' && r.type === 'percent') ? sum + r.value : sum, 0)
 
   const approved = useMemo(() => sales.filter(s => s.status === 'approved'), [sales])
-  const refunded = useMemo(() => sales.filter(s => s.status === 'refunded' || s.status === 'chargeback' || s.status === 'cancelled'), [sales])
 
   const splitByPeriod = (list: RawSale[]) => ({
     curr: list.filter(s => { const d = new Date(s.date); return d >= since && d <= until }),
@@ -162,7 +166,6 @@ export default function Dashboard() {
   })
 
   const periodSales = useMemo(() => splitByPeriod(approved), [approved, since, until, prevSince, prevUntil])
-  const periodRefunds = useMemo(() => splitByPeriod(refunded), [refunded, since, until, prevSince, prevUntil])
 
   const metrics = useMemo(() => {
     const { curr, prev } = periodSales
@@ -185,10 +188,10 @@ export default function Dashboard() {
     const ticketMedio = sales > 0 ? grossRevenue / sales : 0
     const prevTicketMedio = prevSales > 0 ? prevGrossRevenue / prevSales : 0
 
-    const refundAmount = periodRefunds.curr.reduce((sum, s) => sum + s.amount, 0)
-    const prevRefundAmount = periodRefunds.prev.reduce((sum, s) => sum + s.amount, 0)
-    const refundCount = periodRefunds.curr.length
-    const prevRefundCount = periodRefunds.prev.length
+    const refundAmount = refunds.reduce((sum, r) => sum + (r.valor ?? 0), 0)
+    const prevRefundAmount = prevRefunds.reduce((sum, r) => sum + (r.valor ?? 0), 0)
+    const refundCount = refunds.length
+    const prevRefundCount = prevRefunds.length
 
     const uniqueBuyers = new Set(curr.map(s => s.customerEmail).filter(Boolean)).size
     const prevUniqueBuyers = new Set(prev.map(s => s.customerEmail).filter(Boolean)).size
@@ -201,7 +204,7 @@ export default function Dashboard() {
       refundAmount, prevRefundAmount, refundCount, prevRefundCount,
       uniqueBuyers, prevUniqueBuyers,
     }
-  }, [periodSales, periodRefunds, taxPercent, syncedAdSpend, prevMetaDaily])
+  }, [periodSales, refunds, prevRefunds, taxPercent, syncedAdSpend, prevMetaDaily])
 
   const chartData = useMemo(() => {
     return eachDayOfInterval({ start: since, end: until }).map(day => {

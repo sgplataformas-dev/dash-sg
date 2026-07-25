@@ -90,6 +90,27 @@ export async function fetchRawSales(): Promise<RawSale[]> {
   }))
 }
 
+export interface RawRefund {
+  createdAt: string
+  evento: string
+  valor: number | null
+}
+
+export async function fetchRefunds(since: Date, until: Date): Promise<RawRefund[]> {
+  const { data, error } = await supabase
+    .from('reembolso')
+    .select('created_at, evento, valor')
+    .gte('created_at', since.toISOString())
+    .lte('created_at', until.toISOString())
+    .order('created_at', { ascending: false })
+  if (error || !data) return []
+  return data.map(row => ({
+    createdAt: row.created_at,
+    evento: row.evento,
+    valor: row.valor !== null && row.valor !== '' ? Number(row.valor) : null,
+  }))
+}
+
 function fbStatus(s: string | null): CampaignStatus {
   return s === 'ACTIVE' ? 'active' : 'paused'
 }
