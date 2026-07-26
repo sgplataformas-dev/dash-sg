@@ -15,13 +15,15 @@ export function PeriodFilter({
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <Select value={period} onValueChange={(v) => onPeriodChange(v as PeriodOption)}>
-        <SelectTrigger className="w-40 h-9 text-sm">
+        <SelectTrigger className="w-44 h-9 text-sm">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="today">Hoje</SelectItem>
-          <SelectItem value="7d">7 dias</SelectItem>
-          <SelectItem value="30d">30 dias</SelectItem>
+          <SelectItem value="yesterday">Ontem</SelectItem>
+          <SelectItem value="7d">Últimos 7 dias</SelectItem>
+          <SelectItem value="30d">Últimos 30 dias</SelectItem>
+          <SelectItem value="max">Máximo</SelectItem>
           <SelectItem value="custom">Personalizado</SelectItem>
         </SelectContent>
       </Select>
